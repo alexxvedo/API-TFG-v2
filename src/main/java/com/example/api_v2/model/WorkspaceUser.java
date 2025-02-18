@@ -39,6 +39,10 @@ public class WorkspaceUser {
     @JsonManagedReference(value = "flashcard-createdBy")
     private List<Flashcard> flashcards = new ArrayList<>();
 
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "note-createdBy")
+    private List<Note> notes = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

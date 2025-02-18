@@ -14,19 +14,24 @@ public class WebConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow specific origin for development
+        // Permitir solicitudes desde el frontend en desarrollo
         config.addAllowedOrigin("http://localhost:3000");
 
-        // Allow all HTTP methods
+        // Permitir todas las solicitudes (GET, POST, DELETE, etc.)
         config.addAllowedMethod("*");
 
-        // Allow all headers
+        // Permitir todos los encabezados
         config.addAllowedHeader("*");
 
-        // Allow credentials
+        // 🔥 Agregar encabezados expuestos para que el frontend pueda acceder a ellos
+        config.addExposedHeader("Content-Disposition");
+        config.addExposedHeader("Content-Type");
+
+        // Permitir credenciales (cookies, autenticación)
         config.setAllowCredentials(true);
 
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
 }
+

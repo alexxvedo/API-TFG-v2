@@ -47,6 +47,9 @@ public class Collection {
     @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudySession> studySessions;
 
+    @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Document> documents = new ArrayList<>();
+
 
     @PrePersist
     protected void onCreate() {

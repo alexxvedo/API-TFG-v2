@@ -21,6 +21,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }  // Repositorio para dependencias externas
 }
 
 dependencies {
@@ -35,6 +36,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation "io.pinecone:pinecone-client:4.0.0"
+
 }
 
 
