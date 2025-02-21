@@ -4,6 +4,8 @@ import com.example.api_v2.dto.*;
 import com.example.api_v2.exception.ResourceNotFoundException;
 import com.example.api_v2.model.*;
 import com.example.api_v2.repository.*;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
@@ -76,15 +78,11 @@ public class FlashcardService {
     }
 
     @Transactional
-    public FlashcardDto createFlashcard(Long collectionId, FlashcardDto flashcardDto, String userId) {
+    public FlashcardDto createFlashcard(Long collectionId, FlashcardDto flashcardDto, String email) {
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id: " + collectionId));
 
-        // Obtenemos el usuario del workspace que creo la Flashcard
-        WorkspaceUser workspaceUser = collection.getWorkspace().getUsers().stream()
-                .filter(user -> user.getUser().getClerkId().equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        User user = userRepository.findByEmail(email).orElse(null);
 
 
 
@@ -99,7 +97,7 @@ public class FlashcardService {
                 .status(flashcardDto.getStatus())
                 .notes(flashcardDto.getNotes())
                 .tags(flashcardDto.getTags())
-                .createdBy(workspaceUser) // 🔹 Convertimos `WorkspaceUser`
+                .createdBy(user) 
                 .createdAt(flashcardDto.getCreatedAt())
                 .updatedAt(flashcardDto.getUpdatedAt())
                 .build();
@@ -111,7 +109,6 @@ public class FlashcardService {
 
         // Forzar la inicialización del objeto para evitar que sea un proxy
         Hibernate.initialize(flashcard.getCreatedBy());
-        Hibernate.initialize(flashcard.getCreatedBy().getUser());
 
         return convertToDto(flashcard);
 
@@ -214,10 +211,11 @@ public class FlashcardService {
                 .orElseThrow(() -> new RuntimeException("Collection not found"));
 
         // Obtenemos el usuario del workspace que creo la Flashcard
-        WorkspaceUser workspaceUser = collection.getWorkspace().getUsers().stream()
-                .filter(user -> user.getUser().getClerkId().equals(userId))
+        User user = collection.getWorkspace().getWorkspaceUsers().stream()
+                .map(WorkspaceUser::getUser)
+                .filter(u -> u.getId().equals(userId))  
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         List<Flashcard> savedFlashcards = flashcards.stream()
                 .map(dto -> {
@@ -227,7 +225,7 @@ public class FlashcardService {
                     flashcard.setCollection(collection);
                     flashcard.setRepetitionLevel(0);
                     flashcard.setNextReviewDate(LocalDateTime.now());
-                    flashcard.setCreatedBy(workspaceUser);
+                    flashcard.setCreatedBy(user);
                     return flashcardRepository.save(flashcard);
                 })
                 .collect(Collectors.toList());
@@ -272,7 +270,6 @@ public class FlashcardService {
 
     public FlashcardDto convertToDto(Flashcard flashcard) {
         Hibernate.initialize(flashcard.getCreatedBy());  // Forzar carga de createdBy
-        Hibernate.initialize(flashcard.getCreatedBy().getUser());  // Forzar carga de User dentro de WorkspaceUser
 
         return new FlashcardDto(
                 flashcard.getId(),
@@ -286,7 +283,7 @@ public class FlashcardService {
                 flashcard.getStatus(),
                 flashcard.getNotes(),
                 flashcard.getTags(),
-                WorkspaceUserDto.fromEntity(flashcard.getCreatedBy()),  // 🔹 Convertimos a DTO
+                flashcard.getCreatedBy().toDto(),  // 🔹 Convertimos a DTO
                 flashcard.getCreatedAt(),
                 flashcard.getUpdatedAt()
         );

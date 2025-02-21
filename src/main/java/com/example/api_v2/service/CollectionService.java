@@ -3,9 +3,12 @@ package com.example.api_v2.service;
 import com.example.api_v2.dto.CollectionDto;
 import com.example.api_v2.model.Collection;
 import com.example.api_v2.model.Workspace;
+import com.example.api_v2.model.WorkspaceUser;
+import com.example.api_v2.model.User;
 import com.example.api_v2.repository.CollectionRepository;
-import com.example.api_v2.repository.FlashcardRepository;
 import com.example.api_v2.repository.WorkspaceRepository;
+import com.example.api_v2.repository.UserRepository;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +24,7 @@ public class CollectionService {
 
     private final CollectionRepository collectionRepository;
     private final WorkspaceRepository workspaceRepository;
-    private final FlashcardRepository flashcardRepository;
+    private final UserRepository userRepository;
 
     public List<CollectionDto> getCollectionsByWorkspace(Long workspaceId) {
         return collectionRepository.findByWorkspaceId(workspaceId).stream()
@@ -40,18 +43,17 @@ public class CollectionService {
         return convertToDto(collection);
     }
 
-    public CollectionDto createCollection(Long workspaceId, CollectionDto collectionDto, String userId) {
+    public CollectionDto createCollection(Long workspaceId, CollectionDto collectionDto, String email) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new EntityNotFoundException("Workspace not found"));
+
+        User user = userRepository.findByEmail(email).orElse(null);
 
         Collection collection = new Collection();
         collection.setName(collectionDto.getName());
         collection.setDescription(collectionDto.getDescription());
         collection.setWorkspace(workspace);
-        collection.setCreatedBy(workspace.getUsers().stream()
-                .filter(user -> user.getUser().getClerkId().equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("User not found")));
+        collection.setCreatedBy(user);
         collection = collectionRepository.save(collection);
         return convertToDto(collection);
     }
@@ -90,6 +92,7 @@ public class CollectionService {
         dto.setWorkspaceId(collection.getWorkspace().getId());
         dto.setFlashcards(collection.getFlashcards());
         dto.setItemCount(collection.getFlashcards().size());
+        dto.setCreatedBy(collection.getCreatedBy().toDto());
         return dto;
     }
 }

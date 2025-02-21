@@ -1,7 +1,7 @@
 package com.example.api_v2.dto;
 
 import com.example.api_v2.model.Flashcard;
-import com.example.api_v2.model.WorkspaceUser;
+import com.example.api_v2.dto.UserDto;
 import lombok.Data;
 
 import java.util.List;
@@ -16,5 +16,5 @@ public class CollectionDto {
     private Long workspaceId;
     private Integer itemCount;
     private List<Flashcard> flashcards;
-    private WorkspaceUser createdBy;
+    private UserDto createdBy;
 }

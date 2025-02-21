@@ -2,6 +2,7 @@ package com.example.api_v2.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import jakarta.persistence.*;
@@ -44,8 +45,8 @@ public class Note {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    @JsonBackReference(value = "note-createdBy") // Prevent infinite recursion in JSON
-    private WorkspaceUser createdBy;
+    @JsonBackReference(value = "user-notes")
+    private User createdBy;
 
     @PrePersist
     protected void onCreate() {

@@ -1,5 +1,6 @@
 package com.example.api_v2.service;
 
+import com.example.api_v2.dto.UserDto;
 import com.example.api_v2.dto.WorkspaceDto;
 import com.example.api_v2.model.PermissionType;
 import com.example.api_v2.model.User;
@@ -25,10 +26,41 @@ public class WorkspaceService {
     private final UserRepository userRepository;
 
     @Transactional
-    public List<WorkspaceDto> getWorkspacesByUserId(String userId) {
-        log.info("Getting workspaces for user: {}", userId);
+    public List<WorkspaceDto> getWorkspacesByUserId(String email) {
 
-        List<Workspace> workspaces = workspaceRepository.findWorkspacesByUserId(userId);
+        if (email == null || email.isEmpty()) {
+            throw new IllegalArgumentException("email no puede ser nulo o vacío");
+        }
+        User user = userRepository.findByEmail(email).orElse(null);
+        List<WorkspaceUser> workspaceUsers = workspaceUserRepository.findAllByUserId(user.getId());
+
+        log.info("Getting workspaces for user: {}", user.getId());
+
+
+        // Si no existe el usuario lo crea, en caso de que exista simplemente lo devuelve
+        if (user != null && workspaceUsers.isEmpty()) {
+            
+            // Creamos el workspace por defecto
+            Workspace workspace = new Workspace();
+            workspace.setName("My Workspace");
+            workspace.setDescription("Default Workspace");
+            
+
+            // 🔹 Guardamos primero el Workspace antes de referenciarlo
+            workspace = workspaceRepository.save(workspace);
+
+            // Creamos el WorkspaceUser del usuario para el workspace por defecto
+            WorkspaceUser workspaceUser = new WorkspaceUser();
+            workspaceUser.setWorkspace(workspace);
+            workspaceUser.setUser(user);
+            workspaceUser.setPermissionType(PermissionType.OWNER);
+
+            // 🔹 Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
+            workspaceUser = workspaceUserRepository.save(workspaceUser);
+        }
+
+
+        List<Workspace> workspaces = workspaceRepository.findWorkspacesByUserId(user.getId());
         log.info("Found {} workspaces", workspaces.size());
 
         return workspaces.stream()
@@ -62,7 +94,7 @@ public class WorkspaceService {
         workspaceUser = workspaceUserRepository.save(workspaceUser);
 
         // Añadimos el WorkspaceUser al workspace
-        workspace.getUsers().add(workspaceUser);
+        workspace.getWorkspaceUsers().add(workspaceUser);
 
         log.info("Created workspace-user relationship with id: {}", workspaceUser.getId());
 
@@ -86,6 +118,45 @@ public class WorkspaceService {
     @Transactional
     public void deleteWorkspace(Long id) {
         workspaceRepository.deleteById(id);
+    }
+
+
+    @Transactional
+    public void joinWorkspace(Long id, String email, PermissionType permissionType) {
+        Workspace workspace = workspaceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Workspace not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (workspaceUserRepository.findByUserIdAndWorkspaceId(user.getId(), id) != null) {
+            throw new RuntimeException("User already joined the workspace");
+        }
+
+        WorkspaceUser workspaceUser = new WorkspaceUser();
+        workspaceUser.setWorkspace(workspace);
+        workspaceUser.setUser(user);
+        workspaceUser.setPermissionType(permissionType);
+        workspaceUserRepository.save(workspaceUser);
+
+        workspace.getWorkspaceUsers().add(workspaceUser);
+        workspace = workspaceRepository.save(workspace);
+    }
+
+    @Transactional
+    public List<UserDto> getWorkspaceUsers(Long id) {
+        Workspace workspace = workspaceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Workspace not found"));
+        return workspace.getWorkspaceUsers().stream()
+                .map(workspaceUser -> {
+                    UserDto userDto = new UserDto();
+                    userDto.setId(workspaceUser.getUser().getId());
+                    userDto.setName(workspaceUser.getUser().getName());
+                    userDto.setEmail(workspaceUser.getUser().getEmail());
+                    userDto.setImage(workspaceUser.getUser().getImage());
+                    userDto.setPermissionType(workspaceUser.getPermissionType());
+                    return userDto;
+                })
+                .collect(Collectors.toList());
     }
 
     private WorkspaceDto convertToDto(Workspace workspace) {

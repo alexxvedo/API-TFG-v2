@@ -28,12 +28,12 @@ public class WorkspaceUserDto {
     public static WorkspaceUserDto fromEntity(WorkspaceUser workspaceUser) {
         return new WorkspaceUserDto(
                 workspaceUser.getId(),
-                workspaceUser.getUser().getClerkId(),
+                workspaceUser.getUser().getId(),
                 workspaceUser.getUser().getEmail(),
-                workspaceUser.getUser().getFirstName(),
+                workspaceUser.getUser().getName(),
                 workspaceUser.getWorkspace().getId(),
                 workspaceUser.getPermissionType().name(),
-                workspaceUser.getUser().getProfileImageUrl()
+                workspaceUser.getUser().getImage()
         );
     }
 }

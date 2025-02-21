@@ -3,6 +3,7 @@ package com.example.api_v2.service;
 import com.example.api_v2.repository.CollectionRepository;
 import com.example.api_v2.repository.NoteRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 import com.example.api_v2.model.Collection;
@@ -19,6 +20,7 @@ import com.example.api_v2.dto.NoteDto;
 import com.example.api_v2.dto.WorkspaceUserDto;
 import com.example.api_v2.exception.ResourceNotFoundException;
 import com.example.api_v2.model.Note;
+import com.example.api_v2.model.User;
 import com.example.api_v2.model.WorkspaceUser;
 
 @Service
@@ -50,24 +52,25 @@ public class NoteService {
                 .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id: " + collectionId));
 
         // Obtenemos el usuario del workspace que creo la Flashcard
-        WorkspaceUser workspaceUser = collection.getWorkspace().getUsers().stream()
-                .filter(user -> user.getUser().getClerkId().equals(userId))
+        User user = collection.getWorkspace().getWorkspaceUsers().stream()
+                .map(WorkspaceUser::getUser)
+                .filter(u -> u.getId().equals(userId))  
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
 
         Note note = Note.builder()
                 .noteName(noteDto.getNoteName())
                 .content(noteDto.getContent())
                 .collection(collection)
-                .createdBy(workspaceUser)
+                .createdBy(user)
                 .build();
 
         note = noteRepository.save(note);
 
         // Forzar la inicialización del objeto para evitar que sea un proxy
         Hibernate.initialize(note.getCreatedBy());
-        Hibernate.initialize(note.getCreatedBy().getUser());
+
         return convertToDto(note);
     }
 
@@ -95,7 +98,7 @@ public class NoteService {
     private NoteDto convertToDto(Note note) {
 
         Hibernate.initialize(note.getCreatedBy());  // Forzar carga de createdBy
-        Hibernate.initialize(note.getCreatedBy().getUser());  // Forzar carga de User dentro de WorkspaceUser
+        
 
 
         return new NoteDto(
@@ -105,7 +108,7 @@ public class NoteService {
                 note.getContent(),
                 note.getCreatedAt(),
                 note.getUpdatedAt(),
-                WorkspaceUserDto.fromEntity(note.getCreatedBy())
+                note.getCreatedBy()
         );
     }
 

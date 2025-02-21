@@ -26,11 +26,11 @@ public class Workspace {
     @Column
     private String description;
 
-    @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL)
-    private List<WorkspaceUser> users = new ArrayList<>();
+    @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkspaceUser> workspaceUsers = new ArrayList<>();
 
     @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference(value = "workspace-collections")
     private List<Collection> collections = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)

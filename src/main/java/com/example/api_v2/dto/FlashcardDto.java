@@ -1,6 +1,8 @@
 package com.example.api_v2.dto;
 
 import com.example.api_v2.model.KnowledgeLevel;
+import com.example.api_v2.dto.UserDto ;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -24,7 +26,7 @@ public class FlashcardDto {
     private String status;
     private String notes;
     private String tags;
-    private WorkspaceUserDto createdBy;
+    private UserDto createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

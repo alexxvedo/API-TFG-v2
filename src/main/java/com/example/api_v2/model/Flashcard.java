@@ -32,7 +32,7 @@ public class Flashcard {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "collection_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "collection-flashcards")
     private Collection collection;
 
     @Column(nullable = true)
@@ -61,8 +61,8 @@ public class Flashcard {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    @JsonBackReference(value = "flashcard-createdBy") // Prevent infinite recursion in JSON
-    private WorkspaceUser createdBy;
+    @JsonBackReference(value = "user-flashcards")
+    private User createdBy;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

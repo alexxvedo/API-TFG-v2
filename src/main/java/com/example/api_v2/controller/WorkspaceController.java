@@ -1,6 +1,9 @@
 package com.example.api_v2.controller;
 
+import com.example.api_v2.dto.UserDto;
 import com.example.api_v2.dto.WorkspaceDto;
+import com.example.api_v2.model.PermissionType;
+import com.example.api_v2.model.WorkspaceUser;
 import com.example.api_v2.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +20,10 @@ public class WorkspaceController {
 
     private final WorkspaceService workspaceService;
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<WorkspaceDto>> getWorkspacesByUserId(@PathVariable String userId) {
-        List<WorkspaceDto> workspaces = workspaceService.getWorkspacesByUserId(userId);
-        log.info("Returning {} workspaces for user {}", workspaces.size(), userId);
+    @GetMapping("/user/{email}")
+    public ResponseEntity<List<WorkspaceDto>> getWorkspacesByUserId(@PathVariable String email) {
+        List<WorkspaceDto> workspaces = workspaceService.getWorkspacesByUserId(email);
+        log.info("Returning {} workspaces for user {}", workspaces.size(), email);
         return ResponseEntity.ok(workspaces);
     }
 
@@ -29,6 +32,13 @@ public class WorkspaceController {
         WorkspaceDto workspace = workspaceService.getWorkspace(id);
         log.info("Returning workspace: {}", workspace);
         return ResponseEntity.ok(workspace);
+    }
+
+    @GetMapping("/{id}/users")
+    public ResponseEntity<List<UserDto>> getWorkspaceUsers(@PathVariable Long id) {
+        List<UserDto> workspaceUsers = workspaceService.getWorkspaceUsers(id);
+        log.info("Returning {} workspace users for workspace {}", workspaceUsers.size(), id);
+        return ResponseEntity.ok(workspaceUsers);
     }
 
     @PostMapping("/user/{userId}")
@@ -69,5 +79,12 @@ public class WorkspaceController {
 
         // Devolver todos los workspaces del usuario
         return ResponseEntity.ok(workspaceService.getWorkspacesByUserId(userId));
+    }
+
+    @PostMapping("/{id}/join/{email}/{permissionType}")
+    public ResponseEntity<Void> joinWorkspace(@PathVariable Long id, @PathVariable String email, @PathVariable PermissionType permissionType) {
+        log.info("Joining workspace {} by user {}", id, email);
+        workspaceService.joinWorkspace(id, email, permissionType);
+        return ResponseEntity.ok().build();
     }
 }

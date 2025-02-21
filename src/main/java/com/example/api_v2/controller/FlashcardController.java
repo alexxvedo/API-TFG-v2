@@ -44,12 +44,12 @@ public class FlashcardController {
         return ResponseEntity.ok(flashcardService.getFlashcardStats(collectionId));
     }
 
-    @PostMapping("/{collectionId}/flashcards/user/{userId}")
+    @PostMapping("/{collectionId}/flashcards/user/{email}")
     public ResponseEntity<FlashcardDto> createFlashcard(
             @PathVariable Long collectionId,
             @RequestBody FlashcardDto flashcardDto,
-            @PathVariable String userId) {
-        return ResponseEntity.ok(flashcardService.createFlashcard(collectionId, flashcardDto, userId));
+            @PathVariable String email) {
+        return ResponseEntity.ok(flashcardService.createFlashcard(collectionId, flashcardDto, email));
     }
 
     @PostMapping("/{collectionId}/generate")

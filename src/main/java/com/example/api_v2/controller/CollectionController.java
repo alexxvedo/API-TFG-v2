@@ -28,12 +28,12 @@ public class CollectionController {
         return ResponseEntity.ok(collectionService.getCollection(workspaceId, collectionId));
     }
 
-    @PostMapping("/workspace/{workspaceId}/user/{userId}")
+    @PostMapping("/workspace/{workspaceId}/user/{email}")
     public ResponseEntity<CollectionDto> createCollection(
             @PathVariable Long workspaceId,
             @RequestBody CollectionDto collectionDto,
-            @PathVariable String userId) {
-        return ResponseEntity.ok(collectionService.createCollection(workspaceId, collectionDto, userId));
+            @PathVariable String email) {
+        return ResponseEntity.ok(collectionService.createCollection(workspaceId, collectionDto, email));
     }
 
     @PutMapping("/workspace/{workspaceId}/{collectionId}")

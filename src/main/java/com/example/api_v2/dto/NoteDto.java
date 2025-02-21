@@ -7,6 +7,8 @@ import lombok.Builder;
 
 import java.time.LocalDateTime;
 
+import com.example.api_v2.model.User;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,5 +20,5 @@ public class NoteDto {
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private WorkspaceUserDto createdBy;
+    private User createdBy;
 }

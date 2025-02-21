@@ -21,55 +21,40 @@ public class UserService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceUserRepository workspaceUserRepository;
 
-    public UserDto getUserByClerkId(String clerkId) {
-        return userRepository.findByClerkId(clerkId).map(User::toDto)
+    public UserDto getUser(String id) {
+        return userRepository.findById(id).map(User::toDto)
                 .orElse(null);
     }
 
-    public User createUser(String clerkId, String email, String firstName, String lastName, String profileImageUrl) {
+    public User createUser(String id) {
 
-        if (clerkId == null || clerkId.isEmpty()) {
-            throw new IllegalArgumentException("clerkId no puede ser nulo o vacío");
+        if (id == null || id.isEmpty()) {
+            throw new IllegalArgumentException("id no puede ser nulo o vacío");
         }
-        User user = userRepository.findByClerkId(clerkId).orElse(null);
+        User user = userRepository.findById(id).orElse(null);
+        WorkspaceUser workspaceUser = workspaceUserRepository.findByUserId(id);
 
         // Si no existe el usuario lo crea, en caso de que exista simplemente lo devuelve
-        if (user == null) {
-            user = new User();
-            user.setClerkId(clerkId);
-            user.setEmail(email);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setProfileImageUrl(profileImageUrl);
-            user.setUpdatedAt(LocalDateTime.now());
-
-            // Guardamos primero el usuario
-            user = userRepository.save(user);
-
+        if (user != null && workspaceUser == null) {
+            
             // Creamos el workspace por defecto
             Workspace workspace = new Workspace();
             workspace.setName("My Workspace");
             workspace.setDescription("Default Workspace");
-            workspace.setCreatedAt(LocalDateTime.now());
-            workspace.setUpdatedAt(LocalDateTime.now());
+            
 
             // 🔹 Guardamos primero el Workspace antes de referenciarlo
             workspace = workspaceRepository.save(workspace);
 
             // Creamos el WorkspaceUser del usuario para el workspace por defecto
-            WorkspaceUser workspaceUser = new WorkspaceUser();
+            workspaceUser = new WorkspaceUser();
             workspaceUser.setWorkspace(workspace);
             workspaceUser.setUser(user);
             workspaceUser.setPermissionType(PermissionType.OWNER);
-            workspaceUser.setCreatedAt(LocalDateTime.now());
-            workspaceUser.setUpdatedAt(LocalDateTime.now());
 
             // 🔹 Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
             workspaceUser = workspaceUserRepository.save(workspaceUser);
 
-            // Asociamos el usuario al workspace y guardamos de nuevo si es necesario
-            workspace.getUsers().add(workspaceUser);
-            workspaceRepository.save(workspace);
         }
 
         return user;

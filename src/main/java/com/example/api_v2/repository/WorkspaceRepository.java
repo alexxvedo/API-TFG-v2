@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
 
-    @Query("SELECT w FROM Workspace w JOIN w.users wu WHERE wu.user.clerkId = :userId")
+    @Query("SELECT w FROM Workspace w JOIN WorkspaceUser wu ON wu.workspace = w WHERE wu.user.id = :userId")
     List<Workspace> findWorkspacesByUserId(@Param("userId") String userId);
 }
+
