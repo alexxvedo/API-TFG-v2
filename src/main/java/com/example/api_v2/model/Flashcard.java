@@ -1,6 +1,5 @@
 package com.example.api_v2.model;
 
-import com.example.api_v2.dto.WorkspaceUserDto;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;

@@ -2,7 +2,6 @@ package com.example.api_v2.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.List;
 
 @Data
 @Entity

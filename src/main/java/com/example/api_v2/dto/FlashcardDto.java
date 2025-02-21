@@ -1,7 +1,6 @@
 package com.example.api_v2.dto;
 
 import com.example.api_v2.model.KnowledgeLevel;
-import com.example.api_v2.dto.UserDto ;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

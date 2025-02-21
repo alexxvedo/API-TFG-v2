@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDateTime;
-import org.hibernate.annotations.Index;
 
 @Data
 @Entity

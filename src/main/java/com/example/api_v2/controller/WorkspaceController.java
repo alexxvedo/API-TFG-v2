@@ -3,7 +3,6 @@ package com.example.api_v2.controller;
 import com.example.api_v2.dto.UserDto;
 import com.example.api_v2.dto.WorkspaceDto;
 import com.example.api_v2.model.PermissionType;
-import com.example.api_v2.model.WorkspaceUser;
 import com.example.api_v2.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

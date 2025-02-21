@@ -1,6 +1,5 @@
 package com.example.api_v2.model;
 
-import com.example.api_v2.dto.UserDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

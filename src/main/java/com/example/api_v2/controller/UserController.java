@@ -3,14 +3,12 @@ package com.example.api_v2.controller;
 
 
 import com.example.api_v2.dto.UserDto;
-import com.example.api_v2.model.User;
 import com.example.api_v2.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @Slf4j
 @RestController
