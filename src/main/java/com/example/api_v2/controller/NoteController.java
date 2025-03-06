@@ -29,9 +29,9 @@ public class NoteController {
         return ResponseEntity.ok(noteService.getNotes(collectionId));
     }
 
-    @PostMapping("/{collectionId}/user/{userId}")
-    public ResponseEntity<NoteDto> createNote(@PathVariable Long collectionId, @RequestBody NoteDto note, @PathVariable String userId) {
-        return ResponseEntity.ok(noteService.createNote(collectionId, note, userId));
+    @PostMapping("/{collectionId}/user/{email}")
+    public ResponseEntity<NoteDto> createNote(@PathVariable Long collectionId, @RequestBody NoteDto note, @PathVariable String email) {
+        return ResponseEntity.ok(noteService.createNote(collectionId, note, email));
     }
 
     @PutMapping("/{collectionId}/{id}")

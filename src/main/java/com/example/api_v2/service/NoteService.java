@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.api_v2.dto.NoteDto;
-import com.example.api_v2.dto.WorkspaceUserDto;
 import com.example.api_v2.exception.ResourceNotFoundException;
 import com.example.api_v2.model.Note;
 import com.example.api_v2.model.User;
@@ -25,6 +25,7 @@ import com.example.api_v2.model.WorkspaceUser;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class NoteService {
     
 
@@ -46,7 +47,7 @@ public class NoteService {
                 .collect(Collectors.toList());
     }
 
-    public NoteDto createNote(Long collectionId, NoteDto noteDto, String userId) {
+    public NoteDto createNote(Long collectionId, NoteDto noteDto, String email) {
 
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id: " + collectionId));
@@ -54,7 +55,7 @@ public class NoteService {
         // Obtenemos el usuario del workspace que creo la Flashcard
         User user = collection.getWorkspace().getWorkspaceUsers().stream()
                 .map(WorkspaceUser::getUser)
-                .filter(u -> u.getId().equals(userId))  
+                .filter(u -> u.getEmail().equals(email))  
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
@@ -96,20 +97,19 @@ public class NoteService {
 
 
     private NoteDto convertToDto(Note note) {
+        // Forzar la inicialización de las relaciones necesarias
+        Hibernate.initialize(note.getCreatedBy());
+        Hibernate.initialize(note.getCollection());
 
-        Hibernate.initialize(note.getCreatedBy());  // Forzar carga de createdBy
-        
-
-
-        return new NoteDto(
-                note.getId(),
-                note.getCollection().getId(),
-                note.getNoteName(),
-                note.getContent(),
-                note.getCreatedAt(),
-                note.getUpdatedAt(),
-                note.getCreatedBy()
-        );
+        return NoteDto.builder()
+                .id(note.getId())
+                .collectionId(note.getCollection().getId())
+                .noteName(note.getNoteName())
+                .content(note.getContent())
+                .createdAt(note.getCreatedAt())
+                .updatedAt(note.getUpdatedAt())
+                .createdBy(note.getCreatedBy() != null ? note.getCreatedBy().toDto() : null)
+                .build();
     }
 
     private void updateNoteFromDto(NoteDto noteDto, Note note) {

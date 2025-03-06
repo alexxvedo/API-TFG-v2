@@ -2,6 +2,7 @@ package com.example.api_v2.model;
 
 import com.example.api_v2.dto.UserDto;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -38,19 +39,23 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "user-workspaces")
+    @JsonIgnore
     private List<WorkspaceUser> workspaceUsers = new ArrayList<>();
 
 
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     @JsonManagedReference(value = "user-collections")
+    @JsonIgnore
     private List<Collection> collections;
 
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     @JsonManagedReference(value = "user-flashcards")
+    @JsonIgnore
     private List<Flashcard> flashcards;
 
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     @JsonManagedReference(value = "user-notes")
+    @JsonIgnore
     private List<Note> notes;
 
     @Column(name = "\"createdAt\"", nullable = false, updatable = false)

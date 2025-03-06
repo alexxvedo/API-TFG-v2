@@ -21,7 +21,7 @@ public class WorkspaceController {
 
     @GetMapping("/user/{email}")
     public ResponseEntity<List<WorkspaceDto>> getWorkspacesByUserId(@PathVariable String email) {
-        List<WorkspaceDto> workspaces = workspaceService.getWorkspacesByUserId(email);
+        List<WorkspaceDto> workspaces = workspaceService.getWorkspacesByUserEmail(email);
         log.info("Returning {} workspaces for user {}", workspaces.size(), email);
         return ResponseEntity.ok(workspaces);
     }
@@ -40,12 +40,12 @@ public class WorkspaceController {
         return ResponseEntity.ok(workspaceUsers);
     }
 
-    @PostMapping("/user/{userId}")
+    @PostMapping("/user/{email}")
     public ResponseEntity<WorkspaceDto> createWorkspace(
-            @PathVariable String userId,
+            @PathVariable String email,
             @RequestBody WorkspaceDto workspaceDto) {
-        log.info("Creating workspace for user {}: {}", userId, workspaceDto);
-        return ResponseEntity.ok(workspaceService.createWorkspace(workspaceDto, userId));
+        log.info("Creating workspace for user {}: {}", email, workspaceDto);
+        return ResponseEntity.ok(workspaceService.createWorkspace(workspaceDto, email));
     }
 
     @PutMapping("/{id}")
@@ -63,22 +63,7 @@ public class WorkspaceController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/init/{userId}")
-    public ResponseEntity<List<WorkspaceDto>> initializeTestData(@PathVariable String userId) {
-        log.info("Initializing test data for user {}", userId);
-
-        // Crear algunos workspaces de prueba
-        WorkspaceDto workspace1 = new WorkspaceDto();
-        workspace1.setName("Workspace 1");
-        workspaceService.createWorkspace(workspace1, userId);
-
-        WorkspaceDto workspace2 = new WorkspaceDto();
-        workspace2.setName("Workspace 2");
-        workspaceService.createWorkspace(workspace2, userId);
-
-        // Devolver todos los workspaces del usuario
-        return ResponseEntity.ok(workspaceService.getWorkspacesByUserId(userId));
-    }
+    
 
     @PostMapping("/{id}/join/{email}/{permissionType}")
     public ResponseEntity<Void> joinWorkspace(@PathVariable Long id, @PathVariable String email, @PathVariable PermissionType permissionType) {

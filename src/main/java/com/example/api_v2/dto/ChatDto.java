@@ -1,24 +1,20 @@
 package com.example.api_v2.dto;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-
-
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class NoteDto {
+public class ChatDto {
     private Long id;
-    private Long collectionId;
-    private String noteName;
-    private String content;
+    private Long workspaceId;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private UserDto createdBy;
+    private List<MessageDto> messages;
 }

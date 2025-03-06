@@ -20,13 +20,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceUserRepository workspaceUserRepository;
     private final UserRepository userRepository;
 
-    @Transactional
-    public List<WorkspaceDto> getWorkspacesByUserId(String email) {
+    public List<WorkspaceDto> getWorkspacesByUserEmail(String email) {
 
         if (email == null || email.isEmpty()) {
             throw new IllegalArgumentException("email no puede ser nulo o vacío");
@@ -46,7 +46,7 @@ public class WorkspaceService {
             workspace.setDescription("Default Workspace");
             
 
-            // 🔹 Guardamos primero el Workspace antes de referenciarlo
+            // Guardamos primero el Workspace antes de referenciarlo
             workspace = workspaceRepository.save(workspace);
 
             // Creamos el WorkspaceUser del usuario para el workspace por defecto
@@ -55,7 +55,7 @@ public class WorkspaceService {
             workspaceUser.setUser(user);
             workspaceUser.setPermissionType(PermissionType.OWNER);
 
-            // 🔹 Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
+            // Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
             workspaceUser = workspaceUserRepository.save(workspaceUser);
         }
 
@@ -75,36 +75,39 @@ public class WorkspaceService {
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
     }
 
-    @Transactional
-    public WorkspaceDto createWorkspace(WorkspaceDto workspaceDto, String userId) {
-        log.info("Creating workspace with name: {} for user: {}", workspaceDto.getName(), userId);
+    public WorkspaceDto createWorkspace(WorkspaceDto workspaceDto, String email) {
+        log.info("Creating workspace with name: {} for user: {}", workspaceDto.getName(), email);
 
         // Crear el workspace
         Workspace workspace = new Workspace();
         workspace.setName(workspaceDto.getName());
         workspace.setDescription(workspaceDto.getDescription());
+        
+        // Guardar primero el workspace para obtener un ID
+        workspace = workspaceRepository.save(workspace);
+        log.info("Created workspace with id: {}", workspace.getId());
 
         // Creamos el WorkspaceUser del usuario que ha creado el workspace
         WorkspaceUser workspaceUser = new WorkspaceUser();
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         workspaceUser.setUser(user);
         workspaceUser.setWorkspace(workspace);
         workspaceUser.setPermissionType(PermissionType.OWNER);
+        
+        // Guardar la relación WorkspaceUser
         workspaceUser = workspaceUserRepository.save(workspaceUser);
+        log.info("Created workspace-user relationship with id: {}", workspaceUser.getId());
 
         // Añadimos el WorkspaceUser al workspace
         workspace.getWorkspaceUsers().add(workspaceUser);
-
-        log.info("Created workspace-user relationship with id: {}", workspaceUser.getId());
-
+        
+        // Actualizar el workspace con la nueva relación
         workspace = workspaceRepository.save(workspace);
-        log.info("Created workspace with id: {}", workspace.getId());
 
         return convertToDto(workspace);
     }
 
-    @Transactional
     public WorkspaceDto updateWorkspace(Long id, WorkspaceDto workspaceDto) {
         Workspace workspace = workspaceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
@@ -115,13 +118,11 @@ public class WorkspaceService {
         return convertToDto(workspace);
     }
 
-    @Transactional
     public void deleteWorkspace(Long id) {
         workspaceRepository.deleteById(id);
     }
 
 
-    @Transactional
     public void joinWorkspace(Long id, String email, PermissionType permissionType) {
         Workspace workspace = workspaceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
@@ -142,7 +143,6 @@ public class WorkspaceService {
         workspace = workspaceRepository.save(workspace);
     }
 
-    @Transactional
     public List<UserDto> getWorkspaceUsers(Long id) {
         Workspace workspace = workspaceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
