@@ -25,7 +25,7 @@ public class DocumentController {
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadDocument(
-            @PathVariable Long collectionId,
+            @PathVariable("collectionId") Long collectionId,
             @RequestParam("file") MultipartFile file) {
         try {
             documentService.uploadFile(collectionId, file);
@@ -35,21 +35,21 @@ public class DocumentController {
         }
     }
 
-    @GetMapping
-    public ResponseEntity<List<DocumentDto>> getDocuments(@PathVariable Long collectionId) {
+    @GetMapping("")
+    public ResponseEntity<List<DocumentDto>> getDocuments(@PathVariable("collectionId") Long collectionId) {
         return ResponseEntity.ok(documentService.getDocumentsByCollection(collectionId));
     }
 
     @GetMapping("/{documentId}")
-    public ResponseEntity<byte[]> downloadDocument(@PathVariable Long documentId) {
+    public ResponseEntity<byte[]> downloadDocument(@PathVariable("documentId") Long documentId) {
         Document document = documentService.getDocument(documentId)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
         String fileName = document.getFileName();
         String encodedFileName = UriUtils.encode(fileName, StandardCharsets.UTF_8);
 
-        System.out.println("📄 Enviando archivo: " + fileName);
-        System.out.println("📝 Encabezado Content-Disposition: " +
+        System.out.println(" Enviando archivo: " + fileName);
+        System.out.println(" Encabezado Content-Disposition: " +
                 "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName);
 
         return ResponseEntity.ok()
@@ -60,7 +60,7 @@ public class DocumentController {
 
 
     @DeleteMapping("/{documentId}")
-    public ResponseEntity<String> deleteDocument(@PathVariable Long documentId) {
+    public ResponseEntity<String> deleteDocument(@PathVariable("documentId") Long documentId) {
         documentService.deleteDocument(documentId);
         return ResponseEntity.ok("Archivo eliminado correctamente");
     }

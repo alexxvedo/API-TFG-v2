@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,12 +48,23 @@ public class DocumentService {
 
 
         // 🔹 Enviar documento al agente para indexación y análisis
-        agentService.processDocument(savedDocument.getId().toString(), collectionId.toString(), file.getBytes())
+        agentService.processDocument(file.getBytes())
                 .doOnError(error -> {
                     System.err.println("Error al procesar el documento en el agente: " + error.getMessage());
                     // Aquí podrías agregar más lógica de manejo de errores si es necesario
+                }).flatMap((Map<String, Object> response) -> {
+                    @SuppressWarnings("unchecked")
+                    List<Number> embeddingList = (List<Number>) response.get("embedding");
+                    float[] embedding = new float[embeddingList.size()];
+                    for (int i = 0; i < embeddingList.size(); i++) {
+                        embedding[i] = embeddingList.get(i).floatValue();
+                    }
+                    savedDocument.setEmbedding(embedding);
+                    return Mono.fromCallable(() -> documentRepository.save(savedDocument));
                 })
+                
                 .subscribe();
+
 
         return savedDocument;
     }
@@ -62,10 +74,17 @@ public class DocumentService {
 
     @Transactional(readOnly = true)
     public List<DocumentDto> getDocumentsByCollection(Long collectionId) {
-        return documentRepository.findByCollectionId(collectionId)
-                .stream()
-                .map(DocumentDto::new)
-                .collect(Collectors.toList());
+
+        List<Document> documentos = documentRepository.findByCollectionId(collectionId);
+
+        if (documentos.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            return documentos
+            .stream()
+            .map(DocumentDto::new)
+            .collect(Collectors.toList());
+        }
     }
 
     @Transactional(readOnly = true)

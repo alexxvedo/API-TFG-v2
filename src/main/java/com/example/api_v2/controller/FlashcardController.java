@@ -29,32 +29,32 @@ public class FlashcardController {
     }
 
     @GetMapping("/{collectionId}/flashcards")
-    public ResponseEntity<List<FlashcardDto>> getFlashcardsByCollection(@PathVariable Long collectionId) {
+    public ResponseEntity<List<FlashcardDto>> getFlashcardsByCollection(@PathVariable("collectionId") Long collectionId) {
         return ResponseEntity.ok(flashcardService.getFlashcardsByCollection(collectionId));
     }
 
     @GetMapping("/{collectionId}/flashcards/review")
-    public ResponseEntity<List<Flashcard>> getFlashcardsForReview(@PathVariable Long collectionId) {
+    public ResponseEntity<List<Flashcard>> getFlashcardsForReview(@PathVariable("collectionId") Long collectionId) {
         List<Flashcard> flashcards = flashcardService.getFlashcardsForReview(collectionId);
         return ResponseEntity.ok(flashcards);
     }
 
     @GetMapping("/{collectionId}/stats")
-    public ResponseEntity<FlashcardStatsDto> getFlashcardStats(@PathVariable Long collectionId) {
+    public ResponseEntity<FlashcardStatsDto> getFlashcardStats(@PathVariable("collectionId") Long collectionId) {
         return ResponseEntity.ok(flashcardService.getFlashcardStats(collectionId));
     }
 
     @PostMapping("/{collectionId}/flashcards/user/{email}")
     public ResponseEntity<FlashcardDto> createFlashcard(
-            @PathVariable Long collectionId,
+            @PathVariable("collectionId") Long collectionId,
             @RequestBody FlashcardDto flashcardDto,
-            @PathVariable String email) {
+            @PathVariable("email") String email) {
         return ResponseEntity.ok(flashcardService.createFlashcard(collectionId, flashcardDto, email));
     }
 
     @PostMapping("/{collectionId}/generate")
     public ResponseEntity<Map<String, Object>> generateFlashcards(
-            @PathVariable Long collectionId,
+            @PathVariable("collectionId") Long collectionId,
             @RequestBody FlashcardGenerationDto request) {
 
         log.info("Generating flashcards, {}", request );
@@ -65,22 +65,22 @@ public class FlashcardController {
 
     @PutMapping("/{collectionId}/flashcards/{flashcardId}")
     public ResponseEntity<FlashcardDto> updateFlashcard(
-            @PathVariable Long collectionId,
-            @PathVariable Long flashcardId,
+            @PathVariable("collectionId") Long collectionId,
+            @PathVariable("flashcardId") Long flashcardId,
             @RequestBody FlashcardDto flashcardDto) {
         return ResponseEntity.ok(flashcardService.updateFlashcard(flashcardId, flashcardDto));
     }
 
     @DeleteMapping("/{collectionId}/flashcards/{flashcardId}")
-    public ResponseEntity<Void> deleteFlashcard(@PathVariable Long flashcardId) {
+    public ResponseEntity<Void> deleteFlashcard(@PathVariable("flashcardId") Long flashcardId) {
         flashcardService.deleteFlashcard(flashcardId);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{collectionId}/flashcards/{flashcardId}/review")
     public ResponseEntity<Flashcard> submitReview(
-            @PathVariable Long collectionId,
-            @PathVariable Long flashcardId,
+            @PathVariable("collectionId") Long collectionId,
+            @PathVariable("flashcardId") Long flashcardId,
             @RequestBody FlashcardReviewDto reviewDto) {
         Flashcard flashcard = flashcardService.processReview(flashcardId, reviewDto);
         return ResponseEntity.ok(flashcard);

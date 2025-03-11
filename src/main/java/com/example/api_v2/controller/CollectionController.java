@@ -17,37 +17,37 @@ public class CollectionController {
     private final CollectionService collectionService;
 
     @GetMapping("/workspace/{workspaceId}")
-    public ResponseEntity<List<CollectionDto>> getCollectionsByWorkspace(@PathVariable Long workspaceId) {
+    public ResponseEntity<List<CollectionDto>> getCollectionsByWorkspace(@PathVariable("workspaceId") Long workspaceId) {
         return ResponseEntity.ok(collectionService.getCollectionsByWorkspace(workspaceId));
     }
 
     @GetMapping("/workspace/{workspaceId}/{collectionId}")
     public ResponseEntity<CollectionDto> getCollection(
-            @PathVariable Long workspaceId,
-            @PathVariable Long collectionId) {
+            @PathVariable("workspaceId") Long workspaceId,
+            @PathVariable("collectionId") Long collectionId) {
         return ResponseEntity.ok(collectionService.getCollection(workspaceId, collectionId));
     }
 
     @PostMapping("/workspace/{workspaceId}/user/{email}")
     public ResponseEntity<CollectionDto> createCollection(
-            @PathVariable Long workspaceId,
+            @PathVariable("workspaceId") Long workspaceId,
             @RequestBody CollectionDto collectionDto,
-            @PathVariable String email) {
+            @PathVariable("email") String email) {
         return ResponseEntity.ok(collectionService.createCollection(workspaceId, collectionDto, email));
     }
 
     @PutMapping("/workspace/{workspaceId}/{collectionId}")
     public ResponseEntity<CollectionDto> updateCollection(
-            @PathVariable Long workspaceId,
-            @PathVariable Long collectionId,
+            @PathVariable("workspaceId") Long workspaceId,
+            @PathVariable("collectionId") Long collectionId,
             @RequestBody CollectionDto collectionDto) {
         return ResponseEntity.ok(collectionService.updateCollection(workspaceId, collectionId, collectionDto));
     }
 
     @DeleteMapping("/workspace/{workspaceId}/{collectionId}")
     public ResponseEntity<Void> deleteCollection(
-            @PathVariable Long workspaceId,
-            @PathVariable Long collectionId) {
+            @PathVariable("workspaceId") Long workspaceId,
+            @PathVariable("collectionId") Long collectionId) {
         collectionService.deleteCollection(workspaceId, collectionId);
         return ResponseEntity.ok().build();
     }

@@ -27,23 +27,29 @@ public class UserService {
     }
 
     public User createUser(String id) {
-
         if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("id no puede ser nulo o vacío");
         }
+
+        // Intentar encontrar el usuario existente
         User user = userRepository.findById(id).orElse(null);
+
+        // Si el usuario no existe, retornamos null (no deberíamos crear usuarios aquí)
+        if (user == null) {
+            return null;
+        }
+
+        // Buscar si el usuario ya tiene un workspace
         WorkspaceUser workspaceUser = workspaceUserRepository.findByUserId(id);
 
-        // Si no existe el usuario lo crea, en caso de que exista simplemente lo devuelve
-        if (user != null && workspaceUser == null) {
-            
+        // Si el usuario existe pero no tiene workspace, crear uno por defecto
+        if (workspaceUser == null) {
             // Creamos el workspace por defecto
             Workspace workspace = new Workspace();
             workspace.setName("My Workspace");
             workspace.setDescription("Default Workspace");
-            
 
-            // 🔹 Guardamos primero el Workspace antes de referenciarlo
+            // Guardamos primero el Workspace antes de referenciarlo
             workspace = workspaceRepository.save(workspace);
 
             // Creamos el WorkspaceUser del usuario para el workspace por defecto
@@ -52,13 +58,11 @@ public class UserService {
             workspaceUser.setUser(user);
             workspaceUser.setPermissionType(PermissionType.OWNER);
 
-            // 🔹 Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
+            // Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
             workspaceUser = workspaceUserRepository.save(workspaceUser);
-
         }
 
         return user;
-
     }
 
     public User getUserByEmail(String email) {

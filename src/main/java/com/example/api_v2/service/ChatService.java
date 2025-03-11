@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +31,7 @@ public class ChatService {
     public ChatDto getChat(Long workspaceId) {
         return chatRepository.findByWorkspaceId(workspaceId)
                 .map(this::mapToChatDto)
-                .orElseGet(() -> createChat(workspaceId));
+                .orElse(null);
     }
 
     @Transactional
@@ -39,6 +41,7 @@ public class ChatService {
                     Chat newChat = Chat.builder()
                             .workspaceId(workspaceId)
                             .createdAt(LocalDateTime.now())
+                            .messages(new ArrayList<>())
                             .build();
                     return chatRepository.save(newChat);
                 });
@@ -61,24 +64,16 @@ public class ChatService {
         return mapToMessageDto(message);
     }
 
-    private ChatDto createChat(Long workspaceId) {
-        Chat chat = Chat.builder()
-                .workspaceId(workspaceId)
-                .createdAt(LocalDateTime.now())
-                .build();
-        
-        Chat savedChat = chatRepository.save(chat);
-        return mapToChatDto(savedChat);
-    }
-
     private ChatDto mapToChatDto(Chat chat) {
         return ChatDto.builder()
                 .id(chat.getId())
                 .workspaceId(chat.getWorkspaceId())
                 .createdAt(chat.getCreatedAt())
-                .messages(chat.getMessages().stream()
+                .messages(chat.getMessages() != null 
+                    ? chat.getMessages().stream()
                         .map(this::mapToMessageDto)
-                        .collect(Collectors.toList()))
+                        .collect(Collectors.toList())
+                    : Collections.emptyList())
                 .build();
     }
 

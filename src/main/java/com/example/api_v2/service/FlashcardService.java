@@ -288,7 +288,4 @@ public class FlashcardService {
                 flashcard.getUpdatedAt()
         );
     }
-
-
-
 }

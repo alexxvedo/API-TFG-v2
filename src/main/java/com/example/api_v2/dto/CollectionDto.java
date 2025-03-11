@@ -3,6 +3,7 @@ package com.example.api_v2.dto;
 import com.example.api_v2.model.Flashcard;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -16,4 +17,5 @@ public class CollectionDto {
     private Integer itemCount;
     private List<Flashcard> flashcards;
     private UserDto createdBy;
+    private LocalDateTime createdAt;
 }

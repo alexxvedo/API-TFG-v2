@@ -14,21 +14,19 @@ public class AgentService {
 
     public AgentService() {
         this.webClient = WebClient.builder()
-                .baseUrl("http://localhost:8001")  // Conecta con agent.py
-                .build();
+                .baseUrl("http://localhost:8000")  // Conecta con agent.py
+                .build(); 
     }
 
     // Enviar documento al agente para procesamiento
-    public Mono<Map<String, Object>> processDocument(String documentId, String collectionId, byte[] fileContent) {
+    public Mono<Map<String, Object>> processDocument(byte[] fileContent) {
         // Convertir el contenido del archivo a Base64
         String base64Content = Base64.getEncoder().encodeToString(fileContent);
         
         return webClient.post()
                 .uri("/process-document/")
                 .bodyValue(Map.of(
-                        "id", documentId,
-                        "text", base64Content,
-                        "collection_id", collectionId
+                        "content", base64Content
                 ))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});

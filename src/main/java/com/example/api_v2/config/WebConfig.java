@@ -16,6 +16,8 @@ public class WebConfig {
 
         // Permitir solicitudes desde el frontend en desarrollo
         config.addAllowedOrigin("http://localhost:3000");
+        config.addAllowedOrigin("http://localhost:35701");
+        config.addAllowedOrigin("http://localhost:44933");
 
         // Permitir todas las solicitudes (GET, POST, DELETE, etc.)
         config.addAllowedMethod("*");
@@ -34,4 +36,3 @@ public class WebConfig {
         return new CorsFilter(source);
     }
 }
-

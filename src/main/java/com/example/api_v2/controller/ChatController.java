@@ -16,13 +16,17 @@ public class ChatController {
     private final ChatService chatService;
 
     @GetMapping("/workspace/{workspaceId}")
-    public ResponseEntity<ChatDto> getChat(@PathVariable Long workspaceId) {
-        return ResponseEntity.ok(chatService.getChat(workspaceId));
+    public ResponseEntity<ChatDto> getChat(@PathVariable("workspaceId") Long workspaceId) {
+        ChatDto chat = chatService.getChat(workspaceId);
+        if (chat == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(chat);
     }
 
     @PostMapping("/workspace/{workspaceId}/message")
     public ResponseEntity<MessageDto> addMessage(
-            @PathVariable Long workspaceId,
+            @PathVariable("workspaceId") Long workspaceId,
             @RequestBody ChatMessageRequest request) {
         return ResponseEntity.ok(
                 chatService.addMessage(workspaceId, request.getContent(), request.getSenderEmail())

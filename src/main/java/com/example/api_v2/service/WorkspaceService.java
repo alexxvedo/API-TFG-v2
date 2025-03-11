@@ -27,24 +27,22 @@ public class WorkspaceService {
     private final UserRepository userRepository;
 
     public List<WorkspaceDto> getWorkspacesByUserEmail(String email) {
-
         if (email == null || email.isEmpty()) {
             throw new IllegalArgumentException("email no puede ser nulo o vacío");
         }
-        User user = userRepository.findByEmail(email).orElse(null);
-        List<WorkspaceUser> workspaceUsers = workspaceUserRepository.findAllByUserId(user.getId());
 
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
+
+        List<WorkspaceUser> workspaceUsers = workspaceUserRepository.findAllByUserId(user.getId());
         log.info("Getting workspaces for user: {}", user.getId());
 
-
-        // Si no existe el usuario lo crea, en caso de que exista simplemente lo devuelve
-        if (user != null && workspaceUsers.isEmpty()) {
-            
+        // Si el usuario no tiene workspaces, crear uno por defecto
+        if (workspaceUsers.isEmpty()) {
             // Creamos el workspace por defecto
             Workspace workspace = new Workspace();
             workspace.setName("My Workspace");
             workspace.setDescription("Default Workspace");
-            
 
             // Guardamos primero el Workspace antes de referenciarlo
             workspace = workspaceRepository.save(workspace);
@@ -57,8 +55,8 @@ public class WorkspaceService {
 
             // Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
             workspaceUser = workspaceUserRepository.save(workspaceUser);
+            workspaceUsers = List.of(workspaceUser);
         }
-
 
         List<Workspace> workspaces = workspaceRepository.findWorkspacesByUserId(user.getId());
         log.info("Found {} workspaces", workspaces.size());

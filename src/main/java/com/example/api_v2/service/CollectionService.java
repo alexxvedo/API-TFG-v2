@@ -93,6 +93,7 @@ public class CollectionService {
         dto.setFlashcards(collection.getFlashcards());
         dto.setItemCount(collection.getFlashcards().size());
         dto.setCreatedBy(collection.getCreatedBy().toDto());
+        dto.setCreatedAt(collection.getCreatedAt());
         return dto;
     }
 }
