@@ -49,7 +49,7 @@ public class Flashcard {
     private LocalDateTime lastReviewedAt;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(name = "status")
     private String status = "active";
 
     @Column(columnDefinition = "TEXT")

@@ -59,6 +59,9 @@ public class DocumentService {
                     for (int i = 0; i < embeddingList.size(); i++) {
                         embedding[i] = embeddingList.get(i).floatValue();
                     }
+                    String content = (String) response.get("content");
+                    System.out.println(content);
+                    savedDocument.setContent(content);
                     savedDocument.setEmbedding(embedding);
                     return Mono.fromCallable(() -> documentRepository.save(savedDocument));
                 })

@@ -7,15 +7,20 @@ import reactor.core.publisher.Mono;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import com.example.api_v2.repository.DocumentRepository;
+import com.example.api_v2.model.Document;
+import java.util.HashMap;
 
 @Service
 public class AgentService {
     private final WebClient webClient;
+    private final DocumentRepository documentRepository;
 
-    public AgentService() {
+    public AgentService(DocumentRepository documentRepository) {
         this.webClient = WebClient.builder()
                 .baseUrl("http://localhost:8000")  // Conecta con agent.py
                 .build(); 
+        this.documentRepository = documentRepository;
     }
 
     // Enviar documento al agente para procesamiento
@@ -26,7 +31,7 @@ public class AgentService {
         return webClient.post()
                 .uri("/process-document/")
                 .bodyValue(Map.of(
-                        "content", base64Content
+                        "pdf_base64", base64Content
                 ))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
@@ -34,9 +39,36 @@ public class AgentService {
 
     // Generar flashcards desde un documento
     public Mono<List<Map<String, Object>>> generateFlashcardsFromDocument(String collectionId, String documentId, int numFlashcards) {
-        return webClient.get()
-                .uri("/agent/{collectionId}/flashcards/{documentId}?num_flashcards={numFlashcards}",
-                     collectionId, documentId, numFlashcards)
+        
+        Document document = documentRepository.findById(Long.parseLong(documentId))
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        // Crear un mapa con los datos que espera el agente Python
+        // El modelo Document en Python espera un campo 'content'
+        HashMap<String, Object> requestBody = new HashMap<>();
+        
+        // Usar el campo content que ya contiene el texto extraído
+        String documentContent = document.getContent();
+        
+        // Si el contenido es nulo o vacío, podríamos intentar extraerlo de los bytes
+        if (documentContent == null || documentContent.isEmpty()) {
+            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para PDFs)
+            documentContent = "No se pudo extraer el contenido del documento";
+            System.out.println("Advertencia: El documento no tiene contenido extraído");
+        }
+        
+        requestBody.put("content", documentContent);
+
+        System.out.println("Enviando contenido del documento al agente Python: " + 
+                (documentContent != null ? documentContent.substring(0, Math.min(100, documentContent.length())) + "..." : "null"));
+
+        // Enviar el contenido del documento al agente Python
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/generate-flashcards/")
+                    .queryParam("num_flashcards", numFlashcards)
+                    .build())
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {});
     }
@@ -64,17 +96,67 @@ public class AgentService {
 
 
     public Mono<Map<String, Object>> getBriefSummary(String collectionId, String documentId) {
-        return webClient.get()
-                .uri("/brief-summary/{collectionId}/{documentId}",
-                     collectionId, documentId)
+        Document document = documentRepository.findById(Long.parseLong(documentId))
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        // Crear un mapa con los datos que espera el agente Python
+        // El modelo Document en Python espera un campo 'content'
+        HashMap<String, Object> requestBody = new HashMap<>();
+        
+        // Usar el campo content que ya contiene el texto extraído
+        String documentContent = document.getContent();
+        
+        // Si el contenido es nulo o vacío, podríamos intentar extraerlo de los bytes
+        if (documentContent == null || documentContent.isEmpty()) {
+            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para PDFs)
+            documentContent = "No se pudo extraer el contenido del documento";
+            System.out.println("Advertencia: El documento no tiene contenido extraído");
+        }
+        
+        requestBody.put("content", documentContent);
+
+        System.out.println("Enviando contenido del documento al agente Python: " + 
+                (documentContent != null ? documentContent.substring(0, Math.min(100, documentContent.length())) + "..." : "null"));
+
+        // Enviar el contenido del documento al agente Python
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/generate-brief-summary/")
+                    .build())
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
 
     public Mono<Map<String, Object>> getLongSummary(String collectionId, String documentId){
-        return webClient.get()
-                .uri("/long-summary/{collectionId}/{documentId}",
-                     collectionId, documentId)
+        Document document = documentRepository.findById(Long.parseLong(documentId))
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        // Crear un mapa con los datos que espera el agente Python
+        // El modelo Document en Python espera un campo 'content'
+        HashMap<String, Object> requestBody = new HashMap<>();
+        
+        // Usar el campo content que ya contiene el texto extraído
+        String documentContent = document.getContent();
+        
+        // Si el contenido es nulo o vacío, podríamos intentar extraerlo de los bytes
+        if (documentContent == null || documentContent.isEmpty()) {
+            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para PDFs)
+            documentContent = "No se pudo extraer el contenido del documento";
+            System.out.println("Advertencia: El documento no tiene contenido extraído");
+        }
+        
+        requestBody.put("content", documentContent);
+
+        System.out.println("Enviando contenido del documento al agente Python: " + 
+                (documentContent != null ? documentContent.substring(0, Math.min(100, documentContent.length())) + "..." : "null"));
+
+        // Enviar el contenido del documento al agente Python
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/generate-detailed-summary/")
+                    .build())
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

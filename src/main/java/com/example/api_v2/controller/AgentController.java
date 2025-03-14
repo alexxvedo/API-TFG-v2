@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
+import com.example.api_v2.service.DocumentService;
 
 @RestController
 @RequestMapping("/agent")
@@ -16,6 +17,8 @@ import reactor.core.publisher.Mono;
 public class AgentController {
 
     private final AgentService agentService;
+
+    private final DocumentService documentService;
 
     
 
