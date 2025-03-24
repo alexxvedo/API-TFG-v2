@@ -9,10 +9,16 @@ import java.util.List;
 public interface AgentRepository extends JpaRepository<Agent, Long> {
 
     @Query(value = """
-        SELECT document_id, text FROM documents
-        WHERE collection_id = :collectionId
-        ORDER BY embedding <=> :queryVector
+        SELECT 
+            d.id,
+            d.content,
+            d.file_name,
+            d.file_type,
+            1 - (embedding <-> CAST(:queryVector AS vector)) as similarity_score
+        FROM documents d
+        WHERE d.collection_id = CAST(:collectionId AS BIGINT)
+        ORDER BY similarity_score DESC
         LIMIT :topK
     """, nativeQuery = true)
-    List<Object[]> findSimilarDocuments(@Param("collectionId") String collectionId, @Param("queryVector") float[] queryVector, @Param("topK") int topK);
+    List<Object[]> findSimilarDocuments(@Param("collectionId") String collectionId, @Param("queryVector") String queryVector, @Param("topK") int topK);
 }

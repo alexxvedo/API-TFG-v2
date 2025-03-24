@@ -2,7 +2,9 @@ package com.example.api_v2.service;
 
 import com.example.api_v2.dto.CollectionDto;
 import com.example.api_v2.model.Collection;
+import com.example.api_v2.model.Flashcard;
 import com.example.api_v2.model.Workspace;
+import com.example.api_v2.model.WorkspaceActivity;
 import com.example.api_v2.model.WorkspaceUser;
 import com.example.api_v2.model.User;
 import com.example.api_v2.repository.CollectionRepository;
@@ -13,6 +15,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.api_v2.repository.WorkspaceActivityRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +28,7 @@ public class CollectionService {
     private final CollectionRepository collectionRepository;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
+    private final WorkspaceActivityRepository workspaceActivityRepository;
 
     public List<CollectionDto> getCollectionsByWorkspace(Long workspaceId) {
         return collectionRepository.findByWorkspaceId(workspaceId).stream()
@@ -55,6 +59,12 @@ public class CollectionService {
         collection.setWorkspace(workspace);
         collection.setCreatedBy(user);
         collection = collectionRepository.save(collection);
+
+        WorkspaceActivity activity = new WorkspaceActivity();
+        activity.setWorkspace(workspace);
+        activity.setUser(user);
+        activity.setAction("Created collection: " + collectionDto.getName());
+        activity = workspaceActivityRepository.save(activity);
         return convertToDto(collection);
     }
 
@@ -90,7 +100,7 @@ public class CollectionService {
         dto.setName(collection.getName());
         dto.setDescription(collection.getDescription());
         dto.setWorkspaceId(collection.getWorkspace().getId());
-        dto.setFlashcards(collection.getFlashcards());
+        dto.setFlashcards(collection.getFlashcards().stream().map(Flashcard::toDto).collect(Collectors.toList()));
         dto.setItemCount(collection.getFlashcards().size());
         dto.setCreatedBy(collection.getCreatedBy().toDto());
         dto.setCreatedAt(collection.getCreatedAt());

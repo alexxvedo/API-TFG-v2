@@ -17,6 +17,10 @@ public class StudySession {
     @JoinColumn(name = "collection_id", nullable = false)
     private Collection collection;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(nullable = false)
     private LocalDateTime startTime;
 
@@ -27,7 +31,7 @@ public class StudySession {
     private boolean completed = false;
 
     @OneToMany(mappedBy = "studySession", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<FlashcardActivity> activities = new ArrayList<>();
+    private List<Flashcard> flashcard = new ArrayList<>();
 
     @Column(nullable = false)
     private int totalCards = 0;
@@ -41,19 +45,6 @@ public class StudySession {
     @PrePersist
     protected void onCreate() {
         startTime = LocalDateTime.now();
-    }
-
-    public void addActivity(FlashcardActivity activity) {
-        activities.add(activity);
-        activity.setStudySession(this);
-
-        // Actualizar estadísticas
-        if (activity.isCorrect()) {
-            correctAnswers++;
-        } else {
-            incorrectAnswers++;
-        }
-        totalCards++;
     }
 
     public void complete() {

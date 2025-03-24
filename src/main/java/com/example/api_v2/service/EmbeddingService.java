@@ -1,10 +1,10 @@
 package com.example.api_v2.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,11 +18,22 @@ public class EmbeddingService {
     }
 
     public Mono<List<Float>> getEmbeddings(String text) {
+        Map<String, String> requestBody = Map.of("question", text);
+
+        // Utilizamos float[] para la deserialización y luego lo convertimos a List<Float>
         return webClient.post()
-                .uri("/generate-embedding/")
-                .bodyValue(Map.of("text", text))
+                .uri(uriBuilder -> uriBuilder
+                    .path("/generate_embedding/")
+                    .build())
+                .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(Map.class)
-                .map(response -> (List<Float>) response.get("embedding"));
+                .bodyToMono(float[].class)
+                .map(array -> {
+                    List<Float> list = new ArrayList<>(array.length);
+                    for (float value : array) {
+                        list.add(value);
+                    }
+                    return list;
+                });
     }
 }

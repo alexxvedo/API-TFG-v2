@@ -1,10 +1,14 @@
 package com.example.api_v2.service;
 
 import com.example.api_v2.dto.StudySessionDto;
+import com.example.api_v2.dto.UserFlashcardProgressDto;
 import com.example.api_v2.model.*;
 import com.example.api_v2.repository.CollectionRepository;
 import com.example.api_v2.repository.FlashcardRepository;
 import com.example.api_v2.repository.StudySessionRepository;
+import com.example.api_v2.repository.UserFlashcardProgressRepository;
+import com.example.api_v2.repository.UserRepository;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,19 +26,38 @@ public class StudySessionService {
     private final StudySessionRepository studySessionRepository;
     private final CollectionRepository collectionRepository;
     private final FlashcardRepository flashcardRepository;
+    private final UserFlashcardProgressRepository userFlashcardProgressRepository;
+    private final UserRepository userRepository;
 
     public StudySessionDto createStudySession(StudySessionDto studySessionDto) {
         Collection collection = collectionRepository.findById(studySessionDto.getCollectionId())
                 .orElseThrow(() -> new EntityNotFoundException("Collection not found"));
-
+    
         StudySession studySession = new StudySession();
         studySession.setCollection(collection);
         studySession.setStartTime(LocalDateTime.now());
         studySession.setCompleted(false);
+    
+        System.out.println("📌 Buscando flashcards para colección ID: " + studySessionDto.getUser().getEmail());
+    
+        User user = userRepository.findByEmail(studySessionDto.getUser().getEmail()).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        List<Flashcard> flashcardsStudySession = flashcardRepository.findFlashcardsToReviewToday(collection.getId(), user.getId());
+    
+        System.out.println("📊 Flashcards encontradas: " + flashcardsStudySession.size());
+    
+        for (Flashcard f : flashcardsStudySession) {
+            System.out.println("🃏 Flashcard ID: " + f.getId() + " - Pregunta: " + f.getQuestion() + " - nextReviewDate: " + f.getNextReviewDate());
+        }
+    
+        studySession.setFlashcard(flashcardsStudySession);
+        studySession.setTotalCards(flashcardsStudySession.size());
+        studySession.setUser(user);
+    
         studySession = studySessionRepository.save(studySession);
         return convertToDto(studySession);
     }
+    
 
     public StudySessionDto getStudySession(Long id) {
         StudySession studySession = studySessionRepository.findById(id)
@@ -43,29 +66,7 @@ public class StudySessionService {
         return convertToDto(studySession);
     }
 
-    public StudySessionDto addActivity(Long sessionId, Long flashcardId, StudySessionDto.FlashcardActivityDto activityDto) {
-        StudySession studySession = studySessionRepository.findById(sessionId)
-                .orElseThrow(() -> new EntityNotFoundException("Study session not found"));
-
-        Flashcard flashcard = flashcardRepository.findById(flashcardId)
-                .orElseThrow(() -> new EntityNotFoundException("Flashcard not found"));
-
-        FlashcardActivity activity = new FlashcardActivity();
-        activity.setFlashcard(flashcard);
-        activity.setStudySession(studySession);
-        activity.setCorrect(activityDto.isCorrect());
-        activity.setNewStatus(activityDto.getNewStatus());
-        activity.setUserAnswer(activityDto.getUserAnswer());
-
-        studySession.addActivity(activity);
-
-        // Actualizar el estado de la flashcard
-        flashcard.setStatus(activity.getNewStatus());
-        flashcardRepository.save(flashcard);
-
-        studySession = studySessionRepository.save(studySession);
-        return convertToDto(studySession);
-    }
+    
 
     public StudySessionDto completeStudySession(Long id) {
         StudySession studySession = studySessionRepository.findById(id)
@@ -88,21 +89,7 @@ public class StudySessionService {
         dto.setCorrectAnswers(studySession.getCorrectAnswers());
         dto.setIncorrectAnswers(studySession.getIncorrectAnswers());
 
-        List<StudySessionDto.FlashcardActivityDto> activities = studySession.getActivities().stream()
-                .map(activity -> {
-                    StudySessionDto.FlashcardActivityDto activityDto = new StudySessionDto.FlashcardActivityDto();
-                    activityDto.setId(activity.getId());
-                    activityDto.setFlashcardId(activity.getFlashcard().getId());
-                    activityDto.setCorrect(activity.isCorrect());
-                    activityDto.setTimestamp(activity.getTimestamp());
-                    activityDto.setNewStatus(activity.getNewStatus());
-                    activityDto.setUserAnswer(activity.getUserAnswer());
-                    return activityDto;
-                })
-                .collect(Collectors.toList());
-
-        dto.setActivities(activities);
+        dto.setFlashcards(studySession.getFlashcard().stream().map(Flashcard::toDto).collect(Collectors.toList()));
         return dto;
     }
 }
-

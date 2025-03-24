@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,12 +27,13 @@ public class FlashcardService {
     private final WorkspaceUserRepository workspaceUserRepository;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
+    private final UserFlashcardProgressRepository userFlashcardProgressRepository;
 
     public List<FlashcardDto> getFlashcardsByCollection(Long collectionId) {
 
         return flashcardRepository.findByCollectionId(collectionId)
                 .stream()
-                .map(this::convertToDto)  // Convertimos cada flashcard a DTO
+                .map(Flashcard::toDto)  // Convertimos cada flashcard a DTO
                 .collect(Collectors.toList());
     }
 
@@ -102,15 +104,46 @@ public class FlashcardService {
                 .updatedAt(flashcardDto.getUpdatedAt())
                 .build();
 
+        
 
 
+        final Flashcard savedFlashcard = flashcardRepository.save(flashcard);
 
-        flashcard = flashcardRepository.save(flashcard);
+        // Crear un UserFlashcardProgress para todos los usuarios del workspace
+        List<UserFlashcardProgress> userFlashcardProgressList = collection.getWorkspace().getWorkspaceUsers().stream()
+                .map(WorkspaceUser::getUser)
+                .map(u -> {
+                    UserFlashcardProgress userFlashcardProgress = UserFlashcardProgress.builder()
+                            .user(u)
+                            .flashcard(savedFlashcard)
+                            .collection(collection)
+                            .knowledgeLevel(savedFlashcard.getKnowledgeLevel())
+                            .repetitionLevel(0)
+                            .easeFactor(2.5) // Valor por defecto
+                            .nextReviewDate(savedFlashcard.getNextReviewDate())
+                            .lastReviewedAt(savedFlashcard.getLastReviewedAt())
+                            .reviewCount(0)
+                            .successCount(0)    
+                            .failureCount(0)
+                            .reviews(new ArrayList<>())
+                            .build();
+                    userFlashcardProgressRepository.save(userFlashcardProgress);
+                    return userFlashcardProgress;
+                }).collect(Collectors.toList());
+
+            savedFlashcard.setUserFlashcardProgress(userFlashcardProgressList);
+
+            flashcardRepository.save(savedFlashcard);
+
+
+        
+
 
         // Forzar la inicialización del objeto para evitar que sea un proxy
         Hibernate.initialize(flashcard.getCreatedBy());
+        Hibernate.initialize(flashcard.getUserFlashcardProgress());
 
-        return convertToDto(flashcard);
+        return flashcard.toDto();
 
 
     }
@@ -123,7 +156,7 @@ public class FlashcardService {
         updateFlashcardFromDto(flashcard, flashcardDto);
         flashcard.setUpdatedAt(LocalDateTime.now());
 
-        return convertToDto(flashcardRepository.save(flashcard));
+        return flashcardRepository.save(flashcard).toDto();
     }
 
     public void deleteFlashcard(Long flashcardId) {
@@ -231,7 +264,7 @@ public class FlashcardService {
                 .collect(Collectors.toList());
 
         return savedFlashcards.stream()
-                .map(this::convertToDto)
+                .map(Flashcard::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -268,24 +301,4 @@ public class FlashcardService {
         return (double) successfulFlashcards / flashcards.size() * 100;
     }
 
-    public FlashcardDto convertToDto(Flashcard flashcard) {
-        Hibernate.initialize(flashcard.getCreatedBy());  // Forzar carga de createdBy
-
-        return new FlashcardDto(
-                flashcard.getId(),
-                flashcard.getQuestion(),
-                flashcard.getAnswer(),
-                flashcard.getCollection().getId(),
-                flashcard.getKnowledgeLevel(),
-                flashcard.getRepetitionLevel(),
-                flashcard.getNextReviewDate(),
-                flashcard.getLastReviewedAt(),
-                flashcard.getStatus(),
-                flashcard.getNotes(),
-                flashcard.getTags(),
-                flashcard.getCreatedBy().toDto(),  // 🔹 Convertimos a DTO
-                flashcard.getCreatedAt(),
-                flashcard.getUpdatedAt()
-        );
-    }
 }

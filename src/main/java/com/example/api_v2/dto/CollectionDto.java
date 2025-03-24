@@ -15,7 +15,7 @@ public class CollectionDto {
     private String description;
     private Long workspaceId;
     private Integer itemCount;
-    private List<Flashcard> flashcards;
+    private List<FlashcardDto> flashcards;
     private UserDto createdBy;
     private LocalDateTime createdAt;
 }

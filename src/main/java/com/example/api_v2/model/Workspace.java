@@ -1,6 +1,7 @@
 package com.example.api_v2.model;
 
 
+import com.example.api_v2.dto.WorkspaceDto;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -33,6 +34,10 @@ public class Workspace {
     @JsonManagedReference(value = "workspace-collections")
     private List<Collection> collections = new ArrayList<>();
 
+    @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "workspace-activities")
+    private List<WorkspaceActivity> activities = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -54,5 +59,13 @@ public class Workspace {
     @Override
     public String toString() {
         return "Workspace{id=" + id + ", name='" + name + "', description='" + description + "'}";
+    }
+
+    public WorkspaceDto toDto() {
+        WorkspaceDto dto = new WorkspaceDto();
+        dto.setId(id);
+        dto.setName(name);
+        dto.setDescription(description);
+        return dto;
     }
 }

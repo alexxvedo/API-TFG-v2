@@ -76,9 +76,10 @@ public class AgentController {
 
     @PostMapping("/ask-agent")
     public Mono<ResponseEntity<Map<String, Object>>> askAgent(
-        @RequestParam("collectionId") String collectionId,
-        @RequestParam("question") String question
+        @RequestBody Map<String, String> requestBody
     ) {
+        String collectionId = requestBody.get("collectionId");
+        String question = requestBody.get("question");
         return agentService
             .askAgent(collectionId, question)
             .map(ResponseEntity::ok);

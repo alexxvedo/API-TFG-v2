@@ -6,6 +6,8 @@ import com.example.api_v2.model.PermissionType;
 import com.example.api_v2.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +42,7 @@ public class WorkspaceController {
         return ResponseEntity.ok(workspaceUsers);
     }
 
-    @PostMapping("/user/{email}")
+    @PostMapping(value = "/user/{email}")
     public ResponseEntity<WorkspaceDto> createWorkspace(
             @PathVariable("email") String email,
             @RequestBody WorkspaceDto workspaceDto) {

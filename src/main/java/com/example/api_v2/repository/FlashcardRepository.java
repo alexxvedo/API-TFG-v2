@@ -19,4 +19,19 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
 
     @Query("SELECT f FROM Flashcard f WHERE f.collection.id = :collectionId AND f.nextReviewDate <= :now")
     List<Flashcard> findDueForReview(@Param("collectionId") Long collectionId, @Param("now") LocalDateTime now);
+
+
+
+    @Query("SELECT f FROM Flashcard f " +
+       "JOIN f.userFlashcardProgress p " +
+       "WHERE f.collection.id = :collectionId " +
+       "AND p.nextReviewDate IS NOT NULL " +
+       "AND CAST(p.nextReviewDate AS date) = CURRENT_DATE " +
+       "AND p.user.id = :userId")
+    List<Flashcard> findFlashcardsToReviewToday(@Param("collectionId") Long collectionId, @Param("userId") String userId);
+
+
+
+
+
 }

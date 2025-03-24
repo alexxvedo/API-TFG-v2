@@ -24,14 +24,6 @@ public class StudySessionController {
         return ResponseEntity.ok(studySessionService.getStudySession(id));
     }
 
-    @PostMapping("/{sessionId}/activities")
-    public ResponseEntity<StudySessionDto> addActivity(
-            @PathVariable("sessionId") Long sessionId,
-            @RequestParam Long flashcardId,
-            @RequestBody StudySessionDto.FlashcardActivityDto activityDto) {
-        return ResponseEntity.ok(studySessionService.addActivity(sessionId, flashcardId, activityDto));
-    }
-
     @PostMapping("/{id}/complete")
     public ResponseEntity<StudySessionDto> completeStudySession(@PathVariable("id") Long id) {
         return ResponseEntity.ok(studySessionService.completeStudySession(id));

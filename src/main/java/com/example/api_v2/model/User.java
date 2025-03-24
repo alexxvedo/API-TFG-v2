@@ -53,10 +53,19 @@ public class User {
     @JsonIgnore
     private List<Flashcard> flashcards;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference(value = "user-study-sessions")
+    @JsonIgnore
+    private List<StudySession> studySessions;
+
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     @JsonManagedReference(value = "user-notes")
     @JsonIgnore
     private List<Note> notes;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference(value = "user-activities")
+    private List<WorkspaceActivity> activities;
 
     @Column(name = "\"createdAt\"", nullable = false, updatable = false)
     private LocalDateTime createdAt;

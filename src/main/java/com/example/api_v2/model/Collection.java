@@ -24,17 +24,21 @@ public class Collection {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workspace_id", nullable = false)
-    @JsonBackReference(value = "workspace-collections")
+    @JsonBackReference(value = "workspace-collections-back")
     private Workspace workspace;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    @JsonBackReference(value = "user-collections")
+    @JsonBackReference(value = "user-collections-back")
     private User createdBy;
 
     @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "collection-flashcards")
     private List<Flashcard> flashcards = new ArrayList<>();
+
+    @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "collection-user-flashcard-progress")
+    private List<UserFlashcardProgress> userFlashcardProgress = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -50,6 +54,7 @@ public class Collection {
 
     @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Note> notes = new ArrayList<>();
+    
 
 
     @PrePersist

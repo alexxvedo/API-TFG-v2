@@ -1,7 +1,7 @@
 package com.example.api_v2.dto;
 
-import com.example.api_v2.model.Collection;
-import com.example.api_v2.model.WorkspaceUser;
+import com.example.api_v2.dto.CollectionDto;
+import com.example.api_v2.dto.WorkspaceUserDto;
 import lombok.Data;
 
 @Data
@@ -11,6 +11,6 @@ public class WorkspaceDto {
     private String description;
     private String createdAt;
     private String updatedAt;
-    private WorkspaceUser users;
-    private Collection collections;
+    private WorkspaceUserDto users;
+    private CollectionDto collections;
 }

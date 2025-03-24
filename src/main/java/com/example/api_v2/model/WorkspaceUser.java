@@ -7,7 +7,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-
+/**
+ * Represents a user's membership in a workspace.
+ */
 @Data
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Entity
@@ -20,7 +22,7 @@ public class WorkspaceUser {
 
     @ManyToOne(fetch = FetchType.LAZY) // Cambiar de OneToOne a ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    @JsonBackReference(value = "user-workspaces")
+    @JsonBackReference(value = "user-workspaces-back")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -14,7 +14,8 @@ public class StudySessionDto {
     private int totalCards;
     private int correctAnswers;
     private int incorrectAnswers;
-    private List<FlashcardActivityDto> activities;
+    private List<FlashcardDto> flashcards;
+    private UserDto user;
 
     @Data
     public static class FlashcardActivityDto {

@@ -2,18 +2,25 @@ package com.example.api_v2.service;
 
 import com.example.api_v2.dto.UserDto;
 import com.example.api_v2.dto.WorkspaceDto;
+import com.example.api_v2.model.Collection;
+import com.example.api_v2.model.Flashcard;
 import com.example.api_v2.model.PermissionType;
 import com.example.api_v2.model.User;
+import com.example.api_v2.model.UserFlashcardProgress;
 import com.example.api_v2.model.Workspace;
+import com.example.api_v2.model.WorkspaceActivity;
 import com.example.api_v2.model.WorkspaceUser;
 import com.example.api_v2.repository.UserRepository;
+import com.example.api_v2.repository.WorkspaceActivityRepository;
 import com.example.api_v2.repository.WorkspaceRepository;
 import com.example.api_v2.repository.WorkspaceUserRepository;
+import com.example.api_v2.repository.UserFlashcardProgressRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +32,8 @@ public class WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceUserRepository workspaceUserRepository;
     private final UserRepository userRepository;
+    private final UserFlashcardProgressRepository userFlashcardProgressRepository;
+    private final WorkspaceActivityRepository workspaceActivityRepository;
 
     public List<WorkspaceDto> getWorkspacesByUserEmail(String email) {
         if (email == null || email.isEmpty()) {
@@ -103,6 +112,12 @@ public class WorkspaceService {
         // Actualizar el workspace con la nueva relación
         workspace = workspaceRepository.save(workspace);
 
+        WorkspaceActivity activity = new WorkspaceActivity();
+        activity.setWorkspace(workspace);
+        activity.setUser(user);
+        activity.setAction("Created workspace: " + workspace.getName());
+        activity = workspaceActivityRepository.save(activity);
+
         return convertToDto(workspace);
     }
 
@@ -139,6 +154,29 @@ public class WorkspaceService {
 
         workspace.getWorkspaceUsers().add(workspaceUser);
         workspace = workspaceRepository.save(workspace);
+
+        // Crear UserFlashcardProgress para el todas las flashcards de todas las colecciones
+        List<Collection> collections = workspace.getCollections().stream().collect(Collectors.toList());
+        for (Collection collection : collections) {
+            List<Flashcard> flashcards = collection.getFlashcards();
+            for (Flashcard flashcard : flashcards) {
+                UserFlashcardProgress userFlashcardProgress = UserFlashcardProgress.builder()
+                            .user(user)
+                            .flashcard(flashcard)
+                            .collection(collection)
+                            .knowledgeLevel(flashcard.getKnowledgeLevel())
+                            .repetitionLevel(0)
+                            .easeFactor(2.5) // Valor por defecto
+                            .nextReviewDate(flashcard .getNextReviewDate())
+                            .lastReviewedAt(flashcard.getLastReviewedAt())
+                            .reviewCount(0)
+                            .successCount(0)    
+                            .failureCount(0)
+                            .reviews(new ArrayList<>())
+                            .build();
+                userFlashcardProgressRepository.save(userFlashcardProgress);
+            }
+        }
     }
 
     public List<UserDto> getWorkspaceUsers(Long id) {
