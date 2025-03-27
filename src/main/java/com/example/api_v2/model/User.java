@@ -67,6 +67,10 @@ public class User {
     @JsonManagedReference(value = "user-activities")
     private List<WorkspaceActivity> activities;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference(value = "user-stats")
+    private UserStats userStats;
+
     @Column(name = "\"createdAt\"", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -78,6 +82,18 @@ public class User {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (userStats == null) {
+            UserStats stats = new UserStats();
+            stats.setUser(this);
+            stats.setCreatedFlashcards(0);
+            stats.setStudySeconds(0);
+            stats.setStudiedFlashcards(0);
+            stats.setExpLevel(0);
+            stats.setCurrentLevelExp(0);
+            stats.setCreatedAt(LocalDateTime.now());
+            stats.setUpdatedAt(LocalDateTime.now());
+            this.userStats = stats;
+        }
     }
 
     @PreUpdate

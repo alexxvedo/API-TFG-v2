@@ -48,23 +48,10 @@ public class WorkspaceService {
 
         // Si el usuario no tiene workspaces, crear uno por defecto
         if (workspaceUsers.isEmpty()) {
-            // Creamos el workspace por defecto
-            Workspace workspace = new Workspace();
-            workspace.setName("My Workspace");
-            workspace.setDescription("Default Workspace");
-
-            // Guardamos primero el Workspace antes de referenciarlo
-            workspace = workspaceRepository.save(workspace);
-
-            // Creamos el WorkspaceUser del usuario para el workspace por defecto
-            WorkspaceUser workspaceUser = new WorkspaceUser();
-            workspaceUser.setWorkspace(workspace);
-            workspaceUser.setUser(user);
-            workspaceUser.setPermissionType(PermissionType.OWNER);
-
-            // Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
-            workspaceUser = workspaceUserRepository.save(workspaceUser);
-            workspaceUsers = List.of(workspaceUser);
+            WorkspaceDto workspaceDto = new WorkspaceDto();
+            workspaceDto.setName("My Workspace");
+            workspaceDto.setDescription("Default Workspace");
+            createWorkspace(workspaceDto, email);
         }
 
         List<Workspace> workspaces = workspaceRepository.findWorkspacesByUserId(user.getId());
@@ -117,6 +104,8 @@ public class WorkspaceService {
         activity.setUser(user);
         activity.setAction("Created workspace: " + workspace.getName());
         activity = workspaceActivityRepository.save(activity);
+        log.info("Created workspace activity with id: {}", activity.getId());
+
 
         return convertToDto(workspace);
     }

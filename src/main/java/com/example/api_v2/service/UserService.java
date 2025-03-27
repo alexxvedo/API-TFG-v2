@@ -1,18 +1,23 @@
 package com.example.api_v2.service;
 
 import com.example.api_v2.dto.UserDto;
+import com.example.api_v2.dto.WorkspaceDto;
 import com.example.api_v2.model.PermissionType;
 import com.example.api_v2.model.User;
 import com.example.api_v2.model.Workspace;
+import com.example.api_v2.model.WorkspaceActivity;
 import com.example.api_v2.model.WorkspaceUser;
 import com.example.api_v2.repository.UserRepository;
+import com.example.api_v2.repository.WorkspaceActivityRepository;
 import com.example.api_v2.repository.WorkspaceRepository;
 import com.example.api_v2.repository.WorkspaceUserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -20,11 +25,15 @@ public class UserService {
     private final UserRepository userRepository;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceUserRepository workspaceUserRepository;
+    private final WorkspaceService workspaceService;
+    private final UserStatsService userStatsService;
 
     public UserDto getUser(String id) {
         return userRepository.findById(id).map(User::toDto)
                 .orElse(null);
     }
+
+
 
     public User createUser(String id) {
         if (id == null || id.isEmpty()) {
@@ -44,23 +53,16 @@ public class UserService {
 
         // Si el usuario existe pero no tiene workspace, crear uno por defecto
         if (workspaceUser == null) {
-            // Creamos el workspace por defecto
-            Workspace workspace = new Workspace();
-            workspace.setName("My Workspace");
-            workspace.setDescription("Default Workspace");
+            log.error("Creating default workspace for user: {}", id);
 
-            // Guardamos primero el Workspace antes de referenciarlo
-            workspace = workspaceRepository.save(workspace);
+            WorkspaceDto workspaceDto = new WorkspaceDto();
+            workspaceDto.setName("My Workspace");
+            workspaceDto.setDescription("Default Workspace");
 
-            // Creamos el WorkspaceUser del usuario para el workspace por defecto
-            workspaceUser = new WorkspaceUser();
-            workspaceUser.setWorkspace(workspace);
-            workspaceUser.setUser(user);
-            workspaceUser.setPermissionType(PermissionType.OWNER);
+            workspaceService.createWorkspace(workspaceDto, user.getEmail());
 
-            // Guardamos el WorkspaceUser después de que el Workspace ya existe en la BD
-            workspaceUser = workspaceUserRepository.save(workspaceUser);
         }
+
 
         return user;
     }

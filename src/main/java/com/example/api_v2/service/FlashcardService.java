@@ -28,6 +28,7 @@ public class FlashcardService {
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
     private final UserFlashcardProgressRepository userFlashcardProgressRepository;
+    private final UserStatsService userStatsService;
 
     public List<FlashcardDto> getFlashcardsByCollection(Long collectionId) {
 
@@ -108,6 +109,11 @@ public class FlashcardService {
 
 
         final Flashcard savedFlashcard = flashcardRepository.save(flashcard);
+
+        // Actualizar estadísticas del usuario
+        UserStatsDto updatedStats = new UserStatsDto();
+        updatedStats.setCreatedFlashcards(1);
+        userStatsService.updateUserStats(user.getId().toString(), updatedStats);
 
         // Crear un UserFlashcardProgress para todos los usuarios del workspace
         List<UserFlashcardProgress> userFlashcardProgressList = collection.getWorkspace().getWorkspaceUsers().stream()
