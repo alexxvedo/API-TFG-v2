@@ -8,6 +8,7 @@ import com.example.api_v2.repository.FlashcardRepository;
 import com.example.api_v2.repository.StudySessionRepository;
 import com.example.api_v2.repository.UserFlashcardProgressRepository;
 import com.example.api_v2.repository.UserRepository;
+import com.example.api_v2.repository.UserStatsRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class StudySessionService {
     private final FlashcardRepository flashcardRepository;
     private final UserFlashcardProgressRepository userFlashcardProgressRepository;
     private final UserRepository userRepository;
+    private final UserStatsRepository userStatsRepository;
 
     public StudySessionDto createStudySession(StudySessionDto studySessionDto) {
         Collection collection = collectionRepository.findById(studySessionDto.getCollectionId())
@@ -55,6 +57,8 @@ public class StudySessionService {
         studySession.setUser(user);
     
         studySession = studySessionRepository.save(studySession);
+
+        
         return convertToDto(studySession);
     }
     
@@ -73,6 +77,11 @@ public class StudySessionService {
                 .orElseThrow(() -> new EntityNotFoundException("Study session not found"));
 
         studySession.complete();
+
+        UserStats userStats = userStatsRepository.findByUserId(studySession.getUser().getId())
+                .orElseThrow(() -> new EntityNotFoundException("User stats not found"));
+        userStats.setStudySessionsCompleted(1);
+        userStatsRepository.save(userStats);
 
         studySession = studySessionRepository.save(studySession);
         return convertToDto(studySession);

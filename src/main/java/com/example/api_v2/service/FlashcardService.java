@@ -113,6 +113,7 @@ public class FlashcardService {
         // Actualizar estadísticas del usuario
         UserStatsDto updatedStats = new UserStatsDto();
         updatedStats.setCreatedFlashcards(1);
+        updatedStats.setExperience(5);
         userStatsService.updateUserStats(user.getId().toString(), updatedStats);
 
         // Crear un UserFlashcardProgress para todos los usuarios del workspace
@@ -256,6 +257,8 @@ public class FlashcardService {
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        
+
         List<Flashcard> savedFlashcards = flashcards.stream()
                 .map(dto -> {
                     Flashcard flashcard = new Flashcard();
@@ -265,7 +268,14 @@ public class FlashcardService {
                     flashcard.setRepetitionLevel(0);
                     flashcard.setNextReviewDate(LocalDateTime.now());
                     flashcard.setCreatedBy(user);
+
+                    UserStatsDto updatedStats = new UserStatsDto();
+                    updatedStats.setCreatedFlashcards(1);
+                    updatedStats.setExperience(5);
+                    userStatsService.updateUserStats(user.getId().toString(), updatedStats);
+
                     return flashcardRepository.save(flashcard);
+
                 })
                 .collect(Collectors.toList());
 

@@ -88,8 +88,10 @@ public class User {
             stats.setCreatedFlashcards(0);
             stats.setStudySeconds(0);
             stats.setStudiedFlashcards(0);
-            stats.setExpLevel(0);
-            stats.setCurrentLevelExp(0);
+            stats.setLevel(1);
+            stats.setExperience(0);
+            stats.setExperienceToNextLevel(100);
+            stats.setTotalExperience(0);
             stats.setCreatedAt(LocalDateTime.now());
             stats.setUpdatedAt(LocalDateTime.now());
             this.userStats = stats;

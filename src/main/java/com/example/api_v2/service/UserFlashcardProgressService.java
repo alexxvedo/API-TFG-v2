@@ -1,15 +1,17 @@
 package com.example.api_v2.service;
 
 import com.example.api_v2.dto.UserFlashcardProgressDto;
+import com.example.api_v2.model.KnowledgeLevel;
 import com.example.api_v2.model.UserFlashcardProgress;
+import com.example.api_v2.model.UserStats;
 import com.example.api_v2.repository.UserFlashcardProgressRepository;
+import com.example.api_v2.repository.UserStatsRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +19,7 @@ import java.util.Optional;
 public class UserFlashcardProgressService {
 
     private final UserFlashcardProgressRepository userFlashcardProgressRepository;
+    private final UserStatsRepository userStatsRepository;
 
     public UserFlashcardProgressDto updateProgress(UserFlashcardProgressDto progressDto) {
       
@@ -30,7 +33,10 @@ public class UserFlashcardProgressService {
 
         System.out.println("ProgressDto: " + progressDto);
 
-        if ("CORRECT".equals(progressDto.getReviewResult())) {
+        UserStats userStats = userStatsRepository.findByUserId(progressDto.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User stats not found"));
+
+        if (KnowledgeLevel.BIEN.getValue().equals(progressDto.getReviewResult())) {
             if (newRepetitionLevel == 0) {
                 interval = 1;
             } else if (newRepetitionLevel == 1) {
@@ -40,10 +46,12 @@ public class UserFlashcardProgressService {
             }
             newRepetitionLevel++;
             newEaseFactor = Math.max(1.3, newEaseFactor + 0.1);
-        } else if ("PARTIAL".equals(progressDto.getReviewResult())) {
+            userStats.setStudySeconds(userStats.getStudySeconds() + progressDto.getStudyTimeInSeconds());
+            userStats.setStudiedFlashcards(userStats.getStudiedFlashcards() + 1);
+        } else if (KnowledgeLevel.REGULAR.getValue().equals(progressDto.getReviewResult())) {
             interval = 1;
             newEaseFactor = Math.max(1.3, newEaseFactor - 0.1);
-        } else if ("WRONG".equals(progressDto.getReviewResult())) {
+        } else if (KnowledgeLevel.MAL.getValue().equals(progressDto.getReviewResult())) {
             newRepetitionLevel = 0;
             interval = 1;
             newEaseFactor = Math.max(1.3, newEaseFactor - 0.2);
@@ -58,6 +66,8 @@ public class UserFlashcardProgressService {
         progress.setNextReviewDate(nextReviewDate);
         progress.setLastReviewedAt(LocalDateTime.now());
         progress.setReviewCount(progress.getReviewCount() + 1);
+        progress.setKnowledgeLevel(KnowledgeLevel.fromString(progressDto.getReviewResult()));
+        progress.setStudyTimeInSeconds(progressDto.getStudyTimeInSeconds());
 
         // Guardar cambios
         userFlashcardProgressRepository.save(progress);

@@ -21,4 +21,5 @@ public class UserFlashcardProgressDto {
     private Integer failureCount;
     private List<LocalDateTime> reviews;
     private String reviewResult;
+    private Integer studyTimeInSeconds;
 }

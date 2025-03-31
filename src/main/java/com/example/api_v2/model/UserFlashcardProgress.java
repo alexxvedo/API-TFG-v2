@@ -64,11 +64,8 @@ public class UserFlashcardProgress {
     @Column(name = "reviews")
     private List<LocalDateTime> reviews = new ArrayList<>();  
 
-
-    
-    
-    
-
+    @Column(name = "study_time_in_seconds")
+    private Integer studyTimeInSeconds;
 
     @PrePersist
     protected void onCreate() {

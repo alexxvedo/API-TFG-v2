@@ -85,6 +85,7 @@ public class Flashcard {
     @Column(name = "failure_count")
     private Integer failureCount = 0;
 
+    @Builder.Default
     @OneToMany(mappedBy = "flashcard", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<UserFlashcardProgress> userFlashcardProgress = new ArrayList<>();
@@ -121,7 +122,7 @@ public class Flashcard {
         dto.setStatus(status);
         dto.setNotes(notes);
         dto.setTags(tags);
-        dto.setCreatedBy(createdBy.toDto());  // 🔹 Convertimos a DTO
+        dto.setCreatedBy(createdBy.toDto());  // Convertimos a DTO
         dto.setCreatedAt(createdAt);
         dto.setUpdatedAt(updatedAt);
         dto.setUserFlashcardProgress(userFlashcardProgress.stream().map(UserFlashcardProgress::toDto).collect(Collectors.toList()));
