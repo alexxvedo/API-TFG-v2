@@ -77,6 +77,8 @@ public class NoteService {
 
     public NoteDto updateNote(Long collectionId, Long id, NoteDto noteDto) {
 
+        System.out.println(noteDto.toString());
+
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
 

@@ -40,7 +40,7 @@ public class UserActivityService {
             // Añadir estadísticas
             Map<String, Object> stats = new HashMap<>();
             stats.put("studyTimeInSeconds", progress.getStudyTimeInSeconds());
-            stats.put("result", progress.getKnowledgeLevel().toString());
+            stats.put("result", progress.getKnowledgeLevel() != null ? progress.getKnowledgeLevel().toString() : "UNKNOWN");
             activity.setStats(stats);
 
             activities.add(activity);
@@ -61,10 +61,11 @@ public class UserActivityService {
         // Calcular estadísticas
         int totalCards = weekProgress.size();
         int totalTimeInSeconds = weekProgress.stream()
+            .filter(p -> p.getStudyTimeInSeconds() != null)
             .mapToInt(UserFlashcardProgress::getStudyTimeInSeconds)
             .sum();
         long correctAnswers = weekProgress.stream()
-            .filter(p -> p.getKnowledgeLevel().toString().equals("BIEN"))
+            .filter(p -> p.getKnowledgeLevel() != null && p.getKnowledgeLevel() == KnowledgeLevel.BIEN)
             .count();
 
         // Formatear tiempo de estudio
@@ -86,13 +87,14 @@ public class UserActivityService {
             List<UserFlashcardProgress> dayProgress = progressByDay.getOrDefault(date, Collections.emptyList());
             
             int minutesStudied = dayProgress.stream()
+                    .filter(p -> p.getStudyTimeInSeconds() != null)
                     .mapToInt(UserFlashcardProgress::getStudyTimeInSeconds)
                     .sum() / 60;
             
             int cardsStudied = dayProgress.size();
             
             double accuracy = dayProgress.stream()
-                    .filter(p -> p.getKnowledgeLevel() == KnowledgeLevel.BIEN)
+                    .filter(p -> p.getKnowledgeLevel() != null && p.getKnowledgeLevel() == KnowledgeLevel.BIEN)
                     .count() * 100.0 / (cardsStudied > 0 ? cardsStudied : 1);
 
             UserWeeklyStatsDto.DayActivity dayActivity = new UserWeeklyStatsDto.DayActivity();
@@ -127,6 +129,7 @@ public class UserActivityService {
         
         // Calcular tiempo total de estudio
         int totalMinutes = monthProgress.stream()
+            .filter(p -> p.getStudyTimeInSeconds() != null)
             .mapToInt(UserFlashcardProgress::getStudyTimeInSeconds)
             .sum() / 60;
         
@@ -137,7 +140,7 @@ public class UserActivityService {
         
         // Calcular precisión
         long correctAnswers = monthProgress.stream()
-            .filter(p -> p.getKnowledgeLevel() == KnowledgeLevel.BIEN)
+            .filter(p -> p.getKnowledgeLevel() != null && p.getKnowledgeLevel() == KnowledgeLevel.BIEN)
             .count();
         int totalCards = monthProgress.size();
         stats.setAccuracy(String.format("%.0f%%", totalCards > 0 ? (correctAnswers * 100.0 / totalCards) : 0));
@@ -161,13 +164,14 @@ public class UserActivityService {
             List<UserFlashcardProgress> dayProgress = progressByDay.getOrDefault(date, Collections.emptyList());
             
             int minutesStudied = dayProgress.stream()
+                    .filter(p -> p.getStudyTimeInSeconds() != null)
                     .mapToInt(UserFlashcardProgress::getStudyTimeInSeconds)
                     .sum() / 60;
             
             int cardsStudied = dayProgress.size();
             
             double accuracy = dayProgress.stream()
-                    .filter(p -> p.getKnowledgeLevel() == KnowledgeLevel.BIEN)
+                    .filter(p -> p.getKnowledgeLevel() != null && p.getKnowledgeLevel() == KnowledgeLevel.BIEN)
                     .count() * 100.0 / (cardsStudied > 0 ? cardsStudied : 1);
 
             UserMonthlyStatsDto.DayActivity dayActivity = new UserMonthlyStatsDto.DayActivity();
