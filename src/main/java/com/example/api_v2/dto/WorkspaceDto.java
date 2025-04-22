@@ -1,7 +1,5 @@
 package com.example.api_v2.dto;
 
-import com.example.api_v2.dto.CollectionDto;
-import com.example.api_v2.dto.WorkspaceUserDto;
 import lombok.Data;
 
 @Data

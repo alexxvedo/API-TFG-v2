@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import com.example.api_v2.dto.FlashcardDto;
-import com.example.api_v2.dto.UserFlashcardProgressDto;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.time.LocalDateTime;
@@ -89,13 +88,11 @@ public class Flashcard {
     @OneToMany(mappedBy = "flashcard", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<UserFlashcardProgress> userFlashcardProgress = new ArrayList<>();
-    
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_session_id", nullable = true)
     @JsonBackReference
     private StudySession studySession;
-
 
     @PrePersist
     protected void onCreate() {
@@ -122,10 +119,11 @@ public class Flashcard {
         dto.setStatus(status);
         dto.setNotes(notes);
         dto.setTags(tags);
-        dto.setCreatedBy(createdBy.toDto());  // Convertimos a DTO
+        dto.setCreatedBy(createdBy.toDto()); // Convertimos a DTO
         dto.setCreatedAt(createdAt);
         dto.setUpdatedAt(updatedAt);
-        dto.setUserFlashcardProgress(userFlashcardProgress.stream().map(UserFlashcardProgress::toDto).collect(Collectors.toList()));
+        dto.setUserFlashcardProgress(
+                userFlashcardProgress.stream().map(UserFlashcardProgress::toDto).collect(Collectors.toList()));
         return dto;
     }
 

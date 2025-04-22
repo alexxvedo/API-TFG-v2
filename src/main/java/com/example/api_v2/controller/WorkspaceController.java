@@ -7,7 +7,6 @@ import com.example.api_v2.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,10 +64,9 @@ public class WorkspaceController {
         return ResponseEntity.ok().build();
     }
 
-    
-
     @PostMapping("/{id}/join/{email}/{permissionType}")
-    public ResponseEntity<Void> joinWorkspace(@PathVariable("id") Long id, @PathVariable("email") String email, @PathVariable("permissionType") PermissionType permissionType) {
+    public ResponseEntity<Void> joinWorkspace(@PathVariable("id") Long id, @PathVariable("email") String email,
+            @PathVariable("permissionType") PermissionType permissionType) {
         log.info("Joining workspace {} by user {}", id, email);
         workspaceService.joinWorkspace(id, email, permissionType);
         return ResponseEntity.ok().build();

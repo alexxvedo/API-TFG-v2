@@ -67,6 +67,16 @@ public class User {
     @JsonManagedReference(value = "user-activities")
     private List<WorkspaceActivity> activities;
 
+    @OneToMany(mappedBy = "assignedTo", cascade = CascadeType.ALL)
+    @JsonManagedReference(value = "user-assigned-tasks")
+    @JsonIgnore
+    private List<Task> assignedTasks = new ArrayList<>();
+
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
+    @JsonManagedReference(value = "user-created-tasks")
+    @JsonIgnore
+    private List<Task> createdTasks = new ArrayList<>();
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference(value = "user-stats")
     private UserStats userStats;

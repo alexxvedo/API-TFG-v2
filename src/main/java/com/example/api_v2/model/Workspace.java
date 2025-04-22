@@ -1,6 +1,5 @@
 package com.example.api_v2.model;
 
-
 import com.example.api_v2.dto.WorkspaceDto;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -37,6 +36,10 @@ public class Workspace {
     @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "workspace-activities")
     private List<WorkspaceActivity> activities = new ArrayList<>();
+
+    @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "workspace-tasks")
+    private List<Task> tasks = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

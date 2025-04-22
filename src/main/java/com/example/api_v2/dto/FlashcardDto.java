@@ -1,7 +1,6 @@
 package com.example.api_v2.dto;
 
 import com.example.api_v2.model.KnowledgeLevel;
-import com.example.api_v2.model.UserFlashcardProgress;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Data

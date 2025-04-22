@@ -1,9 +1,7 @@
 package com.example.api_v2.controller;
 
 import com.example.api_v2.dto.CollectionDto;
-import com.example.api_v2.dto.FlashcardStatsDto;
 import com.example.api_v2.service.CollectionService;
-import com.example.api_v2.service.StatsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +14,10 @@ import java.util.List;
 public class CollectionController {
 
     private final CollectionService collectionService;
-    private final StatsService statsService;
 
     @GetMapping("/workspace/{workspaceId}")
-    public ResponseEntity<List<CollectionDto>> getCollectionsByWorkspace(@PathVariable("workspaceId") Long workspaceId) {
+    public ResponseEntity<List<CollectionDto>> getCollectionsByWorkspace(
+            @PathVariable("workspaceId") Long workspaceId) {
         return ResponseEntity.ok(collectionService.getCollectionsByWorkspace(workspaceId));
     }
 
@@ -53,5 +51,5 @@ public class CollectionController {
         collectionService.deleteCollection(workspaceId, collectionId);
         return ResponseEntity.ok().build();
     }
-    
+
 }
