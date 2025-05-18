@@ -53,4 +53,7 @@ public class UserStatsDto {
     private Integer collaborations;
     private Integer helpfulRatings;
     private Integer socialInteractions;
+    
+    // Estadísticas diarias
+    private Map<String, Object> todayStats;
 }

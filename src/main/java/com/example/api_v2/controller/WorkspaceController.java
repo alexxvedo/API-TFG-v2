@@ -3,6 +3,8 @@ package com.example.api_v2.controller;
 import com.example.api_v2.dto.UserDto;
 import com.example.api_v2.dto.WorkspaceDto;
 import com.example.api_v2.model.PermissionType;
+import com.example.api_v2.security.WorkspaceAccess;
+import com.example.api_v2.security.WorkspaceOwnerAccess;
 import com.example.api_v2.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{id}")
+    @WorkspaceAccess(workspaceIdParam = "id")
     public ResponseEntity<WorkspaceDto> getWorkspace(@PathVariable("id") Long id) {
         WorkspaceDto workspace = workspaceService.getWorkspace(id);
         log.info("Returning workspace: {}", workspace);
@@ -35,6 +38,7 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{id}/users")
+    @WorkspaceAccess(workspaceIdParam = "id")
     public ResponseEntity<List<UserDto>> getWorkspaceUsers(@PathVariable("id") Long id) {
         List<UserDto> workspaceUsers = workspaceService.getWorkspaceUsers(id);
         log.info("Returning {} workspace users for workspace {}", workspaceUsers.size(), id);
@@ -50,6 +54,7 @@ public class WorkspaceController {
     }
 
     @PutMapping("/{id}")
+    @WorkspaceOwnerAccess(workspaceIdParam = "id")
     public ResponseEntity<WorkspaceDto> updateWorkspace(
             @PathVariable("id") Long id,
             @RequestBody WorkspaceDto workspaceDto) {
@@ -58,6 +63,7 @@ public class WorkspaceController {
     }
 
     @DeleteMapping("/{id}")
+    @WorkspaceOwnerAccess(workspaceIdParam = "id")
     public ResponseEntity<Void> deleteWorkspace(@PathVariable("id") Long id) {
         log.info("Deleting workspace: {}", id);
         workspaceService.deleteWorkspace(id);
@@ -65,9 +71,20 @@ public class WorkspaceController {
     }
 
     @PostMapping("/{id}/join/{email}/{permissionType}")
+    @WorkspaceOwnerAccess(workspaceIdParam = "id")
     public ResponseEntity<Void> joinWorkspace(@PathVariable("id") Long id, @PathVariable("email") String email,
             @PathVariable("permissionType") PermissionType permissionType) {
-        log.info("Joining workspace {} by user {}", id, email);
+        log.info("Joining workspace {} by user {} with permission {}", id, email, permissionType);
+        workspaceService.joinWorkspace(id, email, permissionType);
+        return ResponseEntity.ok().build();
+    }
+    
+    @PostMapping("/join-by-invite/{id}/{email}/{permissionType}")
+    public ResponseEntity<Void> joinWorkspaceByInvite(
+            @PathVariable("id") Long id, 
+            @PathVariable("email") String email,
+            @PathVariable("permissionType") PermissionType permissionType) {
+        log.info("User {} joining workspace {} through invitation with permission {}", email, id, permissionType);
         workspaceService.joinWorkspace(id, email, permissionType);
         return ResponseEntity.ok().build();
     }

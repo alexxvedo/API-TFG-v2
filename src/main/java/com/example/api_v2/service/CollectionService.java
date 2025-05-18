@@ -5,7 +5,6 @@ import com.example.api_v2.model.Collection;
 import com.example.api_v2.model.Flashcard;
 import com.example.api_v2.model.Workspace;
 import com.example.api_v2.model.WorkspaceActivity;
-import com.example.api_v2.model.WorkspaceUser;
 import com.example.api_v2.model.User;
 import com.example.api_v2.repository.CollectionRepository;
 import com.example.api_v2.repository.WorkspaceRepository;
@@ -18,12 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.api_v2.repository.WorkspaceActivityRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class CollectionService {
+
+    private static final String COLLECTION_NOT_FOUND = "Collection not found";
 
     private final CollectionRepository collectionRepository;
     private final WorkspaceRepository workspaceRepository;
@@ -33,15 +33,16 @@ public class CollectionService {
     public List<CollectionDto> getCollectionsByWorkspace(Long workspaceId) {
         return collectionRepository.findByWorkspaceId(workspaceId).stream()
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public CollectionDto getCollection(Long workspaceId, Long collectionId) {
         Collection collection = collectionRepository.findById(collectionId)
-                .orElseThrow(() -> new EntityNotFoundException("Collection not found"));
+                .orElseThrow(() -> new EntityNotFoundException(COLLECTION_NOT_FOUND));
 
+        // Verificar que la colección pertenece al workspace especificado
         if (!collection.getWorkspace().getId().equals(workspaceId)) {
-            throw new IllegalArgumentException("Collection does not belong to the specified workspace");
+            throw new SecurityException("La colección no pertenece al workspace especificado");
         }
 
         return convertToDto(collection);
@@ -58,19 +59,30 @@ public class CollectionService {
         collection.setDescription(collectionDto.getDescription());
         collection.setWorkspace(workspace);
         collection.setCreatedBy(user);
+        
+        // Añadir tags si existen
+        if (collectionDto.getTags() != null && !collectionDto.getTags().isEmpty()) {
+            collection.setTags(collectionDto.getTags());
+        }
+        
+        // Añadir color si existe
+        if (collectionDto.getColor() != null && !collectionDto.getColor().isEmpty()) {
+            collection.setColor(collectionDto.getColor());
+        }
+        
         collection = collectionRepository.save(collection);
 
         WorkspaceActivity activity = new WorkspaceActivity();
         activity.setWorkspace(workspace);
         activity.setUser(user);
         activity.setAction("Created collection: " + collectionDto.getName());
-        activity = workspaceActivityRepository.save(activity);
+        workspaceActivityRepository.save(activity);
         return convertToDto(collection);
     }
 
     public CollectionDto updateCollection(Long workspaceId, Long collectionId, CollectionDto collectionDto) {
         Collection collection = collectionRepository.findById(collectionId)
-                .orElseThrow(() -> new EntityNotFoundException("Collection not found"));
+                .orElseThrow(() -> new EntityNotFoundException(COLLECTION_NOT_FOUND));
 
         if (!collection.getWorkspace().getId().equals(workspaceId)) {
             throw new IllegalArgumentException("Collection does not belong to the specified workspace");
@@ -78,6 +90,16 @@ public class CollectionService {
 
         collection.setName(collectionDto.getName());
         collection.setDescription(collectionDto.getDescription());
+        
+        // Actualizar tags si existen
+        if (collectionDto.getTags() != null) {
+            collection.setTags(collectionDto.getTags());
+        }
+        
+        // Actualizar color si existe
+        if (collectionDto.getColor() != null) {
+            collection.setColor(collectionDto.getColor());
+        }
 
         collection = collectionRepository.save(collection);
         return convertToDto(collection);
@@ -85,7 +107,7 @@ public class CollectionService {
 
     public void deleteCollection(Long workspaceId, Long collectionId) {
         Collection collection = collectionRepository.findById(collectionId)
-                .orElseThrow(() -> new EntityNotFoundException("Collection not found"));
+                .orElseThrow(() -> new EntityNotFoundException(COLLECTION_NOT_FOUND));
 
         if (!collection.getWorkspace().getId().equals(workspaceId)) {
             throw new IllegalArgumentException("Collection does not belong to the specified workspace");
@@ -100,10 +122,12 @@ public class CollectionService {
         dto.setName(collection.getName());
         dto.setDescription(collection.getDescription());
         dto.setWorkspaceId(collection.getWorkspace().getId());
-        dto.setFlashcards(collection.getFlashcards().stream().map(Flashcard::toDto).collect(Collectors.toList()));
+        dto.setFlashcards(collection.getFlashcards().stream().map(Flashcard::toDto).toList());
         dto.setItemCount(collection.getFlashcards().size());
         dto.setCreatedBy(collection.getCreatedBy().toDto());
         dto.setCreatedAt(collection.getCreatedAt());
+        dto.setTags(collection.getTags());
+        dto.setColor(collection.getColor());
         return dto;
     }
 }

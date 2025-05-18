@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +59,7 @@ public class ChatService {
                 .build();
 
         message = messageRepository.save(message);
-        
+
         return mapToMessageDto(message);
     }
 
@@ -69,11 +68,11 @@ public class ChatService {
                 .id(chat.getId())
                 .workspaceId(chat.getWorkspaceId())
                 .createdAt(chat.getCreatedAt())
-                .messages(chat.getMessages() != null 
-                    ? chat.getMessages().stream()
-                        .map(this::mapToMessageDto)
-                        .collect(Collectors.toList())
-                    : Collections.emptyList())
+                .messages(chat.getMessages() != null
+                        ? chat.getMessages().stream()
+                                .map(this::mapToMessageDto)
+                                .toList()
+                        : Collections.emptyList())
                 .build();
     }
 

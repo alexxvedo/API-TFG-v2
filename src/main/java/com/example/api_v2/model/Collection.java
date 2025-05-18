@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Entity
@@ -21,6 +23,14 @@ public class Collection {
 
     @Column(length = 1000)
     private String description;
+    
+    @ElementCollection
+    @CollectionTable(name = "collection_tags", joinColumns = @JoinColumn(name = "collection_id"))
+    @Column(name = "tag")
+    private Set<String> tags = new HashSet<>();
+    
+    @Column(name = "color")
+    private String color;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workspace_id", nullable = false)

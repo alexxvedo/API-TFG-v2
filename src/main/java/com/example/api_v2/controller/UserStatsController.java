@@ -23,8 +23,11 @@ public class UserStatsController {
     }
 
     @PostMapping("/{email}/achievement-completed")
-    public ResponseEntity<Void> achievementCompleted(@PathVariable("email") String email) {
-        userStatsService.incrementAchievements(email);
+    public ResponseEntity<Void> achievementCompleted(
+        @PathVariable("email") String email,
+        @RequestParam("achievementId") String achievementId
+    ) {
+        userStatsService.incrementAchievements(email, achievementId);
         return ResponseEntity.ok().build();
     }
 }

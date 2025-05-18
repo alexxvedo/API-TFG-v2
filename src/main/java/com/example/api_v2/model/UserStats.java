@@ -127,6 +127,9 @@ public class UserStats {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    @Transient // No se guarda en la base de datos, solo para el DTO
+    private Map<String, Object> todayStats = new HashMap<>();
 
     @PrePersist
     protected void onCreate() {
@@ -208,6 +211,9 @@ public class UserStats {
         dto.setCollaborations(collaborations);
         dto.setHelpfulRatings(helpfulRatings);
         dto.setSocialInteractions(socialInteractions);
+        
+        // Estadísticas diarias
+        dto.setTodayStats(todayStats);
         
         return dto;
     }

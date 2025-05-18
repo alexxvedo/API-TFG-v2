@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Data
 public class CollectionDto {
@@ -17,4 +18,6 @@ public class CollectionDto {
     private List<FlashcardDto> flashcards;
     private UserDto createdBy;
     private LocalDateTime createdAt;
+    private Set<String> tags;
+    private String color;
 }

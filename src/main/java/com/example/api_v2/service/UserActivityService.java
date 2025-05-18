@@ -82,6 +82,23 @@ public class UserActivityService {
         List<UserWeeklyStatsDto.DayActivity> heatmap = new ArrayList<>();
         LocalDateTime nowLocal = LocalDateTime.now();
 
+        // Calcular el máximo de minutos estudiados en cualquier día de la semana
+        int maxMinutesInWeek = 0;
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = nowLocal.minusDays(i).toLocalDate();
+            List<UserFlashcardProgress> dayProgress = progressByDay.getOrDefault(date, Collections.emptyList());
+            
+            int minutesStudied = dayProgress.stream()
+                    .filter(p -> p.getStudyTimeInSeconds() != null)
+                    .mapToInt(UserFlashcardProgress::getStudyTimeInSeconds)
+                    .sum() / 60;
+            
+            maxMinutesInWeek = Math.max(maxMinutesInWeek, minutesStudied);
+        }
+        
+        // Si no hay actividad, establecer un valor mínimo para evitar división por cero
+        maxMinutesInWeek = Math.max(1, maxMinutesInWeek);
+
         for (int i = 6; i >= 0; i--) {
             LocalDate date = nowLocal.minusDays(i).toLocalDate();
             List<UserFlashcardProgress> dayProgress = progressByDay.getOrDefault(date, Collections.emptyList());
@@ -99,10 +116,10 @@ public class UserActivityService {
 
             UserWeeklyStatsDto.DayActivity dayActivity = new UserWeeklyStatsDto.DayActivity();
             dayActivity.setDay(date.getDayOfWeek().toString().substring(0, 3));
+            dayActivity.setIntensity(getIntensityLevel(minutesStudied, maxMinutesInWeek));
             dayActivity.setMinutesStudied(minutesStudied);
             dayActivity.setCardsStudied(cardsStudied);
             dayActivity.setAccuracy(accuracy);
-            dayActivity.setIntensity(getIntensityLevel(minutesStudied));
             dayActivity.setAchievements(Collections.emptyList()); // TODO: Add achievements for the day
             
             heatmap.add(dayActivity);
@@ -159,6 +176,23 @@ public class UserActivityService {
         YearMonth yearMonth = YearMonth.from(now);
         int daysInMonth = yearMonth.lengthOfMonth();
 
+        // Calcular el máximo de minutos estudiados en cualquier día del mes
+        int maxMinutesInMonth = 0;
+        for (int i = 0; i < daysInMonth; i++) {
+            LocalDate date = monthStart.plusDays(i).toLocalDate();
+            List<UserFlashcardProgress> dayProgress = progressByDay.getOrDefault(date, Collections.emptyList());
+            
+            int minutesStudied = dayProgress.stream()
+                    .filter(p -> p.getStudyTimeInSeconds() != null)
+                    .mapToInt(UserFlashcardProgress::getStudyTimeInSeconds)
+                    .sum() / 60;
+            
+            maxMinutesInMonth = Math.max(maxMinutesInMonth, minutesStudied);
+        }
+        
+        // Si no hay actividad, establecer un valor mínimo para evitar división por cero
+        maxMinutesInMonth = Math.max(1, maxMinutesInMonth);
+
         for (int i = 0; i < daysInMonth; i++) {
             LocalDate date = monthStart.plusDays(i).toLocalDate();
             List<UserFlashcardProgress> dayProgress = progressByDay.getOrDefault(date, Collections.emptyList());
@@ -181,7 +215,7 @@ public class UserActivityService {
             dayActivity.setMinutesStudied(minutesStudied);
             dayActivity.setCardsStudied(cardsStudied);
             dayActivity.setAccuracy(accuracy);
-            dayActivity.setIntensity(getIntensityLevel(minutesStudied));
+            dayActivity.setIntensity(getIntensityLevel(minutesStudied, maxMinutesInMonth));
             dayActivity.setAchievements(Collections.emptyList());
             
             heatmap.add(dayActivity);
@@ -208,10 +242,26 @@ public class UserActivityService {
         return String.format("%dh %dm", hours, minutes);
     }
 
-    private int getIntensityLevel(int minutesStudied) {
+    /**
+     * Calcula el nivel de intensidad de estudio relativo al máximo de minutos estudiados
+     * @param minutesStudied Minutos estudiados en el día
+     * @param maxMinutes Máximo de minutos estudiados en cualquier día del período
+     * @return Nivel de intensidad (0-3)
+     */
+    private int getIntensityLevel(int minutesStudied, int maxMinutes) {
         if (minutesStudied == 0) return 0;
-        if (minutesStudied < 30) return 1;
-        if (minutesStudied < 60) return 2;
+        
+        // Si el máximo es muy bajo (menos de 15 minutos), usar una escala fija
+        if (maxMinutes < 15) {
+            if (minutesStudied < 5) return 1;
+            if (minutesStudied < 10) return 2;
+            return 3;
+        }
+        
+        // Calcular intensidad relativa al máximo
+        double ratio = (double) minutesStudied / maxMinutes;
+        if (ratio < 0.33) return 1;
+        if (ratio < 0.66) return 2;
         return 3;
     }
 }

@@ -1,6 +1,7 @@
 package com.example.api_v2.dto;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class WorkspaceDto {
@@ -9,6 +10,6 @@ public class WorkspaceDto {
     private String description;
     private String createdAt;
     private String updatedAt;
-    private WorkspaceUserDto users;
-    private CollectionDto collections;
+    private List<WorkspaceUserDto> users;
+    private List<CollectionDto> collections;
 }
