@@ -5,17 +5,22 @@ import com.example.api_v2.dto.FlashcardGenerationDto;
 import com.example.api_v2.dto.FlashcardReviewDto;
 import com.example.api_v2.dto.FlashcardStatsDto;
 import com.example.api_v2.model.Flashcard;
+import com.example.api_v2.model.User;
+import com.example.api_v2.repository.UserRepository;
 import com.example.api_v2.security.WorkspaceAccess;
 import com.example.api_v2.security.WorkspaceEditAccess;
 import com.example.api_v2.service.AIService;
 import com.example.api_v2.service.CollectionService;
 import com.example.api_v2.service.FlashcardService;
+import com.example.api_v2.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -25,47 +30,54 @@ public class FlashcardController {
     private final FlashcardService flashcardService;
     private final AIService aiService;
     private final CollectionService collectionService;
+    private final UserService userService;
+    private final UserRepository userRepository;
 
     public FlashcardController(FlashcardService flashcardService, AIService aiService,
-            CollectionService collectionService) {
+                               CollectionService collectionService, UserService userService, UserRepository userRepository) {
         this.flashcardService = flashcardService;
         this.aiService = aiService;
         this.collectionService = collectionService;
+        this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
     @WorkspaceAccess
-    public ResponseEntity<List<FlashcardDto>> getFlashcardsByCollection(
+    public ResponseEntity<List<FlashcardDto>> getFlashcardsByUserCollection(
             @PathVariable("workspaceId") Long workspaceId,
-            @PathVariable("collectionId") Long collectionId) {
-        log.info("Obteniendo flashcards para la colección: {} en workspace: {}", collectionId, workspaceId);
-        // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
-        return ResponseEntity.ok(flashcardService.getFlashcardsByCollection(collectionId));
+            @PathVariable("collectionId") Long collectionId,
+            @RequestParam(value = "email", required = false) String email) {
+
+        collectionService.getCollection(workspaceId, collectionId, email);
+
+        return ResponseEntity.ok(flashcardService.getFlashcardsByCollectionWithProgress(collectionId, email));
     }
 
     @GetMapping("/review")
     @WorkspaceAccess
     public ResponseEntity<List<Flashcard>> getFlashcardsForReview(
             @PathVariable("workspaceId") Long workspaceId,
-            @PathVariable("collectionId") Long collectionId) {
+            @PathVariable("collectionId") Long collectionId,
+            Principal principal) {
         log.info("Obteniendo flashcards para revisión de la colección: {} en workspace: {}", collectionId, workspaceId);
-        // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
-        List<Flashcard> flashcards = flashcardService.getFlashcardsForReview(collectionId);
+        // Obtener el ID del usuario actual
+        String userId = principal.getName();
+        List<Flashcard> flashcards = flashcardService.getFlashcardsForReview(collectionId, userId);
         return ResponseEntity.ok(flashcards);
     }
 
-    @GetMapping("/stats")
+    @GetMapping("/stats/user/{email}")
     @WorkspaceAccess
     public ResponseEntity<FlashcardStatsDto> getFlashcardStats(
             @PathVariable("workspaceId") Long workspaceId,
-            @PathVariable("collectionId") Long collectionId) {
-        log.info("Obteniendo estadísticas de flashcards para la colección: {} en workspace: {}", collectionId,
-                workspaceId);
+            @PathVariable("collectionId") Long collectionId,
+            @PathVariable("email") String email) {
+        log.info("Obteniendo estadísticas de flashcards para la colección: {} en workspace: {} para el usuario: {}", collectionId,
+                workspaceId, email);
         // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
-        return ResponseEntity.ok(flashcardService.getFlashcardStats(collectionId));
+        collectionService.getCollection(workspaceId, collectionId, email);
+        return ResponseEntity.ok(flashcardService.getFlashcardStats(collectionId, email));
     }
 
     @PostMapping("/user/{email}")
@@ -77,22 +89,11 @@ public class FlashcardController {
             @PathVariable("email") String email) {
         log.info("Creando flashcard en colección {} por usuario {}: {}", collectionId, email, flashcardDto);
         // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
+        collectionService.getCollection(workspaceId, collectionId, email);
         return ResponseEntity.ok(flashcardService.createFlashcard(collectionId, flashcardDto, email));
     }
 
-    @PostMapping("/generate")
-    @WorkspaceEditAccess
-    public ResponseEntity<Map<String, Object>> generateFlashcards(
-            @PathVariable("workspaceId") Long workspaceId,
-            @PathVariable("collectionId") Long collectionId,
-            @RequestBody FlashcardGenerationDto request) {
-        log.info("Generando flashcards para la colección {}: {}", collectionId, request);
-        // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
-        Map<String, Object> result = aiService.generateFlashcards(request);
-        return ResponseEntity.ok(result);
-    }
+
 
     @PutMapping("/{flashcardId}")
     @WorkspaceEditAccess
@@ -100,10 +101,13 @@ public class FlashcardController {
             @PathVariable("workspaceId") Long workspaceId,
             @PathVariable("collectionId") Long collectionId,
             @PathVariable("flashcardId") Long flashcardId,
-            @RequestBody FlashcardDto flashcardDto) {
+            @RequestBody FlashcardDto flashcardDto,
+            @RequestParam(value = "email", required = false) String email
+
+    ) {
         log.info("Actualizando flashcard {} en colección {}: {}", flashcardId, collectionId, flashcardDto);
         // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
+        collectionService.getCollection(workspaceId, collectionId, email);
         return ResponseEntity.ok(flashcardService.updateFlashcard(flashcardId, flashcardDto));
     }
 
@@ -116,7 +120,6 @@ public class FlashcardController {
         log.info("Eliminando flashcard: {} de la colección: {} en workspace: {}", flashcardId, collectionId,
                 workspaceId);
         // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
         flashcardService.deleteFlashcard(flashcardId);
         return ResponseEntity.ok().build();
     }
@@ -127,11 +130,49 @@ public class FlashcardController {
             @PathVariable("workspaceId") Long workspaceId,
             @PathVariable("collectionId") Long collectionId,
             @PathVariable("flashcardId") Long flashcardId,
-            @RequestBody FlashcardReviewDto reviewDto) {
-        log.info("Enviando revisión para flashcard {} en colección {}: {}", flashcardId, collectionId, reviewDto);
+            @RequestBody Map<String, Object> requestBody,
+            @RequestParam(value = "email", required = false) String email,
+            Principal principal) {
+        log.info("Enviando revisión para flashcard {} en colección {}: {}", flashcardId, collectionId, requestBody);
         // Verificar que la colección pertenece al workspace
-        collectionService.getCollection(workspaceId, collectionId);
-        Flashcard flashcard = flashcardService.processReview(flashcardId, reviewDto);
+        collectionService.getCollection(workspaceId, collectionId, email);
+        
+        // Crear un DTO con los campos mapeados correctamente
+        FlashcardReviewDto reviewDto = new FlashcardReviewDto();
+        
+        // Mapear reviewResult a result
+        if (requestBody.containsKey("reviewResult")) {
+            reviewDto.setResult((String) requestBody.get("reviewResult"));
+            log.info("Mapeando reviewResult: {} a result", requestBody.get("reviewResult"));
+        }
+        
+        // Mapear timeSpentMs
+        if (requestBody.containsKey("timeSpentMs")) {
+            Object timeObj = requestBody.get("timeSpentMs");
+            if (timeObj instanceof Integer) {
+                reviewDto.setTimeSpentMs(((Integer) timeObj).longValue());
+            } else if (timeObj instanceof Long) {
+                reviewDto.setTimeSpentMs((Long) timeObj);
+            } else if (timeObj instanceof Number) {
+                reviewDto.setTimeSpentMs(((Number) timeObj).longValue());
+            }
+            log.info("Tiempo de estudio en ms: {}", reviewDto.getTimeSpentMs());
+        }
+        
+        // Obtener el ID del usuario
+        String userId;
+        if (requestBody.containsKey("userId")) {
+            userId = (String) requestBody.get("userId");
+            reviewDto.setUserId(userId);
+            log.info("Usando ID de usuario enviado desde el frontend: {}", userId);
+        } else {
+            // Fallback al ID del usuario autenticado
+            userId = principal.getName();
+            reviewDto.setUserId(userId);
+            log.info("Usando ID de usuario de la autenticación: {}", userId);
+        }
+        
+        Flashcard flashcard = flashcardService.processReview(flashcardId, reviewDto, userId);
         return ResponseEntity.ok(flashcard);
     }
 }

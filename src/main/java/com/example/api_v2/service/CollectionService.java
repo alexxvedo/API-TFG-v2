@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.api_v2.repository.WorkspaceActivityRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +30,7 @@ public class CollectionService {
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
     private final WorkspaceActivityRepository workspaceActivityRepository;
+    private final FlashcardService flashcardService;
 
     public List<CollectionDto> getCollectionsByWorkspace(Long workspaceId) {
         return collectionRepository.findByWorkspaceId(workspaceId).stream()
@@ -36,7 +38,7 @@ public class CollectionService {
                 .toList();
     }
 
-    public CollectionDto getCollection(Long workspaceId, Long collectionId) {
+    public CollectionDto getCollection(Long workspaceId, Long collectionId, String email) {
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> new EntityNotFoundException(COLLECTION_NOT_FOUND));
 
@@ -45,7 +47,10 @@ public class CollectionService {
             throw new SecurityException("La colección no pertenece al workspace especificado");
         }
 
-        return convertToDto(collection);
+        Optional<User> user = userRepository.findByEmail(email);
+
+
+        return convertToDto(collection, user.get().getId());
     }
 
     public CollectionDto createCollection(Long workspaceId, CollectionDto collectionDto, String email) {
@@ -130,4 +135,21 @@ public class CollectionService {
         dto.setColor(collection.getColor());
         return dto;
     }
+
+    private CollectionDto convertToDto(Collection collection, String userId) {
+        CollectionDto dto = new CollectionDto();
+        dto.setId(collection.getId());
+        dto.setName(collection.getName());
+        dto.setDescription(collection.getDescription());
+        dto.setWorkspaceId(collection.getWorkspace().getId());
+        dto.setFlashcards(collection.getFlashcards().stream().map((flashcard) -> flashcardService.convertToDto(flashcard, userId)).toList());
+        dto.setItemCount(collection.getFlashcards().size());
+        dto.setCreatedBy(collection.getCreatedBy().toDto());
+        dto.setCreatedAt(collection.getCreatedAt());
+        dto.setTags(collection.getTags());
+        dto.setColor(collection.getColor());
+        return dto;
+    }
+
+
 }

@@ -4,7 +4,7 @@ import com.example.api_v2.repository.CollectionRepository;
 import com.example.api_v2.repository.NoteRepository;
 
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.example.api_v2.model.Collection;
 
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.hibernate.Hibernate;
+// No necesitamos Hibernate para este servicio
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,17 +24,13 @@ import com.example.api_v2.model.User;
 import com.example.api_v2.model.WorkspaceUser;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class NoteService {
-    
+
+    private final NoteRepository noteRepository;
+    private final CollectionRepository collectionRepository;
 
     @Autowired
-    private NoteRepository noteRepository;
-    @Autowired
-    private CollectionRepository collectionRepository;
-
-
     public NoteService(NoteRepository noteRepository, CollectionRepository collectionRepository) {
         this.noteRepository = noteRepository;
         this.collectionRepository = collectionRepository;
@@ -47,6 +43,12 @@ public class NoteService {
                 .collect(Collectors.toList());
     }
 
+    public NoteDto getNote(Long id) {
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
+        return convertToDto(note);
+    }
+
     public NoteDto createNote(Long collectionId, NoteDto noteDto, String email) {
 
         Collection collection = collectionRepository.findById(collectionId)
@@ -55,10 +57,9 @@ public class NoteService {
         // Obtenemos el usuario del workspace que creo la Flashcard
         User user = collection.getWorkspace().getWorkspaceUsers().stream()
                 .map(WorkspaceUser::getUser)
-                .filter(u -> u.getEmail().equals(email))  
+                .filter(u -> u.getEmail().equals(email))
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
 
         Note note = Note.builder()
                 .noteName(noteDto.getNoteName())
@@ -69,8 +70,7 @@ public class NoteService {
 
         note = noteRepository.save(note);
 
-        // Forzar la inicialización del objeto para evitar que sea un proxy
-        Hibernate.initialize(note.getCreatedBy());
+        // No es necesario forzar la inicialización
 
         return convertToDto(note);
     }
@@ -97,11 +97,8 @@ public class NoteService {
         noteRepository.delete(note);
     }
 
-
     private NoteDto convertToDto(Note note) {
-        // Forzar la inicialización de las relaciones necesarias
-        Hibernate.initialize(note.getCreatedBy());
-        Hibernate.initialize(note.getCollection());
+        // No es necesario forzar la inicialización
 
         return NoteDto.builder()
                 .id(note.getId())

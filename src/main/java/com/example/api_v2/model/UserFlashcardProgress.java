@@ -40,10 +40,12 @@ public class UserFlashcardProgress {
     @Enumerated(EnumType.STRING)
     private KnowledgeLevel knowledgeLevel;
 
+    @Builder.Default
     @Column(nullable = false)
     private Integer repetitionLevel = 0;
 
-    @Column(nullable = false)
+    @Builder.Default
+    @Column(name = "ease_factor", nullable = false)
     private Double easeFactor = 2.5; // EF inicial
 
     @Column(name = "next_review_date")
@@ -52,36 +54,33 @@ public class UserFlashcardProgress {
     @Column(name = "last_reviewed_at")
     private LocalDateTime lastReviewedAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private Integer reviewCount = 0;
 
+    @Builder.Default
     @Column(nullable = false)
     private Integer successCount = 0;
 
+    @Builder.Default
     @Column(nullable = false)
     private Integer failureCount = 0;
 
+    @Builder.Default
     @Column(name = "reviews")
-    private List<LocalDateTime> reviews = new ArrayList<>();  
+    private List<LocalDateTime> reviews = new ArrayList<>();
 
     @Column(name = "study_time_in_seconds")
     private Integer studyTimeInSeconds;
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.lastReviewedAt = now;
-        this.nextReviewDate = now;
+        this.lastReviewedAt = LocalDateTime.now();
+        this.nextReviewDate = LocalDateTime.now();
     }
-
-
 
     public UserFlashcardProgressDto toDto() {
         UserFlashcardProgressDto dto = new UserFlashcardProgressDto();
-        dto.setId(id);
-        dto.setUserId(user.getId());
-        dto.setFlashcardId(flashcard.getId());
-        dto.setKnowledgeLevel(knowledgeLevel);
         dto.setRepetitionLevel(repetitionLevel);
         dto.setEaseFactor(easeFactor);
         dto.setNextReviewDate(nextReviewDate);
@@ -92,8 +91,6 @@ public class UserFlashcardProgress {
         dto.setReviews(reviews);
         return dto;
 
-
     }
-
 
 }

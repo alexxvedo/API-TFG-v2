@@ -20,14 +20,17 @@ public class FlashcardDto {
     private String answer;
     private Long collectionId;
     private KnowledgeLevel knowledgeLevel;
-    private Integer repetitionLevel;
     private LocalDateTime nextReviewDate;
     private LocalDateTime lastReviewedAt;
     private String status;
-    private String notes;
-    private String tags;
+    private Integer repetitionLevel;
+    private Double easeFactor;
+    private List<LocalDateTime> reviews;
+    private Integer reviewCount;
+    private Integer successCount;
+    private Integer failureCount;
+    private Integer studyTimeInSeconds;
     private UserDto createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<UserFlashcardProgressDto> userFlashcardProgress;
 }

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -153,11 +154,11 @@ public class WorkspaceService {
                             .user(user)
                             .flashcard(flashcard)
                             .collection(collection)
-                            .knowledgeLevel(flashcard.getKnowledgeLevel())
+                            .knowledgeLevel(null)
                             .repetitionLevel(0)
                             .easeFactor(2.5) // Valor por defecto
-                            .nextReviewDate(flashcard .getNextReviewDate())
-                            .lastReviewedAt(flashcard.getLastReviewedAt())
+                            .nextReviewDate(LocalDateTime.now())
+                            .lastReviewedAt(LocalDateTime.now())
                             .reviewCount(0)
                             .successCount(0)    
                             .failureCount(0)

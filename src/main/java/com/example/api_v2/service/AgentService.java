@@ -20,10 +20,11 @@ public class AgentService {
     private final EmbeddingService embeddingService;
     private final AgentRepository agentRepository;
 
-    public AgentService(DocumentRepository documentRepository, EmbeddingService embeddingService, AgentRepository agentRepository) {
+    public AgentService(DocumentRepository documentRepository, EmbeddingService embeddingService,
+            AgentRepository agentRepository) {
         this.webClient = WebClient.builder()
-                .baseUrl("http://localhost:8000")  // Conecta con agent.py
-                .build(); 
+                .baseUrl("http://localhost:8000") // Conecta con agent.py
+                .build();
         this.documentRepository = documentRepository;
         this.embeddingService = embeddingService;
         this.agentRepository = agentRepository;
@@ -33,63 +34,69 @@ public class AgentService {
     public Mono<Map<String, Object>> processDocument(byte[] fileContent) {
         // Convertir el contenido del archivo a Base64
         String base64Content = Base64.getEncoder().encodeToString(fileContent);
-        
+
         return webClient.post()
                 .uri("/process-document/")
                 .bodyValue(Map.of(
-                        "pdf_base64", base64Content
-                ))
+                        "pdf_base64", base64Content))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 
     // Generar flashcards desde un documento
-    public Mono<List<Map<String, Object>>> generateFlashcardsFromDocument(String collectionId, String documentId, int numFlashcards) {
-        
+    public Mono<List<Map<String, Object>>> generateFlashcardsFromDocument(String collectionId, String documentId,
+            int numFlashcards) {
+
         Document document = documentRepository.findById(Long.parseLong(documentId))
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
         // Crear un mapa con los datos que espera el agente Python
         // El modelo Document en Python espera un campo 'content'
         HashMap<String, Object> requestBody = new HashMap<>();
-        
+
         // Usar el campo content que ya contiene el texto extraído
         String documentContent = document.getContent();
-        
+
         // Si el contenido es nulo o vacío, podríamos intentar extraerlo de los bytes
         if (documentContent == null || documentContent.isEmpty()) {
-            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para PDFs)
+            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para
+            // PDFs)
             documentContent = "No se pudo extraer el contenido del documento";
             System.out.println("Advertencia: El documento no tiene contenido extraído");
         }
-        
+
         requestBody.put("content", documentContent);
 
-        System.out.println("Enviando contenido del documento al agente Python: " + 
-                (documentContent != null ? documentContent.substring(0, Math.min(100, documentContent.length())) + "..." : "null"));
+        System.out.println("Enviando contenido del documento al agente Python: " +
+                (documentContent != null ? documentContent.substring(0, Math.min(100, documentContent.length())) + "..."
+                        : "null"));
 
         // Enviar el contenido del documento al agente Python
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
-                    .path("/generate-flashcards/")
-                    .queryParam("num_flashcards", numFlashcards)
-                    .build())
+                        .path("/generate-flashcards/")
+                        .queryParam("num_flashcards", numFlashcards)
+                        .build())
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {
+                });
     }
 
     // Generar flashcards desde una colección
     public Mono<List<Map<String, Object>>> generateFlashcardsFromCollection(String collectionId, int numFlashcards) {
         return webClient.get()
                 .uri("/generate-flashcards/{collectionId}?num_flashcards={numFlashcards}",
-                     collectionId, numFlashcards)
+                        collectionId, numFlashcards)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {
+                });
     }
 
     // Preguntar al agente
-    public Mono<Map<String, Object>> askAgent(String collectionId, String question) {
+    public Mono<Map<String, Object>> askAgent(String collectionId, String question, String additionalContext,
+            List<Map<String, Object>> conversationHistory) {
         // Paso 1: Generar embedding de la pregunta usando el servicio Python
         return embeddingService.getEmbeddings(question)
                 .flatMap(embedding -> {
@@ -99,18 +106,20 @@ public class AgentService {
                     for (int i = 0; i < embedding.size(); i++) {
                         embeddingArray[i] = embedding.get(i);
                     }
-                    
+
                     // Convertir el array a formato vector PostgreSQL '[1,2,3]'
                     StringBuilder vectorStr = new StringBuilder("[");
                     for (int i = 0; i < embeddingArray.length; i++) {
-                        if (i > 0) vectorStr.append(",");
+                        if (i > 0)
+                            vectorStr.append(",");
                         vectorStr.append(embeddingArray[i]);
                     }
                     vectorStr.append("]");
-                    
+
                     // Buscar documentos similares
-                    List<Object[]> similarDocuments = agentRepository.findSimilarDocuments(collectionId, vectorStr.toString(), 5);
-                    
+                    List<Object[]> similarDocuments = agentRepository.findSimilarDocuments(collectionId,
+                            vectorStr.toString(), 5);
+
                     // Preparar los documentos para enviarlos al agente Python
                     List<Map<String, Object>> formattedDocuments = similarDocuments.stream()
                             .map(doc -> {
@@ -145,19 +154,67 @@ public class AgentService {
                                 return docMap;
                             })
                             .toList();
-                    
-                    // Paso 3: Enviar la pregunta y los documentos similares al agente Python
+
+                    // Paso 3: Enviar la pregunta, documentos similares, contexto adicional e
+                    // historial de conversación al agente Python
                     Map<String, Object> requestBody = new HashMap<>();
                     requestBody.put("question", question);
                     requestBody.put("similar_documents", formattedDocuments);
-                    
-                    System.out.println("Enviando pregunta y documentos similares al agente Python");
-                    
+
+                    // Añadir contexto adicional si existe
+                    if (additionalContext != null && !additionalContext.isEmpty()) {
+                        requestBody.put("additional_context", additionalContext);
+                    }
+
+                    // Añadir historial de conversación si existe
+                    if (conversationHistory != null && !conversationHistory.isEmpty()) {
+                        try {
+                            // Convertir el historial de conversación a un formato que el agente Python
+                            // pueda entender
+                            List<Map<String, String>> formattedHistory = new ArrayList<>();
+
+                            for (Map<String, Object> message : conversationHistory) {
+                                if (message != null) {
+                                    Map<String, String> formattedMessage = new HashMap<>();
+                                    // Convertir los valores a String para asegurar compatibilidad
+                                    Object roleObj = message.get("role");
+                                    Object contentObj = message.get("content");
+
+                                    if (roleObj != null) {
+                                        formattedMessage.put("role", String.valueOf(roleObj));
+                                    } else {
+                                        formattedMessage.put("role", "user"); // Valor por defecto
+                                    }
+
+                                    if (contentObj != null) {
+                                        formattedMessage.put("content", String.valueOf(contentObj));
+                                    } else {
+                                        formattedMessage.put("content", ""); // Valor por defecto
+                                    }
+
+                                    formattedHistory.add(formattedMessage);
+                                }
+                            }
+
+                            System.out.println(
+                                    "Enviando historial de conversación con " + formattedHistory.size() + " mensajes");
+                            requestBody.put("conversation_history", formattedHistory);
+                        } catch (Exception e) {
+                            System.err.println("Error al procesar el historial de conversación: " + e.getMessage());
+                            e.printStackTrace();
+                            // No enviamos el historial si hay un error
+                        }
+                    }
+
+                    System.out.println(
+                            "Enviando pregunta, documentos similares, contexto adicional e historial de conversación al agente Python");
+
                     return webClient.post()
                             .uri("/answer-question/")
                             .bodyValue(requestBody)
                             .retrieve()
-                            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
+                            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                            });
                 });
     }
 
@@ -165,7 +222,7 @@ public class AgentService {
         // Convertir tanto la línea como la pregunta a minúsculas para comparación
         line = line.toLowerCase();
         String[] questionTerms = question.toLowerCase().split("\\s+");
-        
+
         // Contar cuántos términos de la pregunta aparecen en la línea
         int matchCount = 0;
         for (String term : questionTerms) {
@@ -173,8 +230,9 @@ public class AgentService {
                 matchCount++;
             }
         }
-        
-        // Considerar relevante si al menos 2 términos de la pregunta aparecen en la línea
+
+        // Considerar relevante si al menos 2 términos de la pregunta aparecen en la
+        // línea
         return matchCount >= 2;
     }
 
@@ -184,55 +242,63 @@ public class AgentService {
 
         // Crear un mapa con los datos que espera el agente Python
         HashMap<String, Object> requestBody = new HashMap<>();
-        
+
         // Usar el campo content que ya contiene el texto extraído
         String documentContent = document.getContent();
-        
+
         // Si el contenido es nulo o vacío, podríamos intentar extraerlo de los bytes
         if (documentContent == null || documentContent.isEmpty()) {
-            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para PDFs)
+            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para
+            // PDFs)
             documentContent = "No se pudo extraer el contenido del documento";
             System.out.println("Advertencia: El documento no tiene contenido extraído");
         }
-        
+
         requestBody.put("content", documentContent);
-        
+
         return webClient.post()
                 .uri("/generate-brief-summary/")
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 
-    public Mono<Map<String, Object>> getLongSummary(String collectionId, String documentId){
+    public Mono<Map<String, Object>> getLongSummary(String collectionId, String documentId, int desiredLength) {
         Document document = documentRepository.findById(Long.parseLong(documentId))
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
         // Crear un mapa con los datos que espera el agente Python
         HashMap<String, Object> requestBody = new HashMap<>();
-        
+
         // Usar el campo content que ya contiene el texto extraído
         String documentContent = document.getContent();
-        
+
         // Si el contenido es nulo o vacío, podríamos intentar extraerlo de los bytes
         if (documentContent == null || documentContent.isEmpty()) {
-            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para PDFs)
+            // Fallback: intentar convertir los bytes a texto (esto podría no funcionar para
+            // PDFs)
             documentContent = "No se pudo extraer el contenido del documento";
             System.out.println("Advertencia: El documento no tiene contenido extraído");
         }
-        
-        requestBody.put("content", documentContent);
 
-        System.out.println("Enviando contenido del documento al agente Python: " + 
-                (documentContent != null ? documentContent.substring(0, Math.min(100, documentContent.length())) + "..." : "null"));
+        requestBody.put("content", documentContent);
+        requestBody.put("desired_length", desiredLength);
+        requestBody.put("output_format", "tiptap");
+
+        System.out.println("Enviando contenido del documento al agente Python con longitud deseada: " + desiredLength
+                + ", contenido: " +
+                (documentContent != null ? documentContent.substring(0, Math.min(100, documentContent.length())) + "..."
+                        : "null"));
 
         // Enviar el contenido del documento al agente Python
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
-                    .path("/generate-detailed-summary/")
-                    .build())
+                        .path("/generate-detailed-summary/")
+                        .build())
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 }

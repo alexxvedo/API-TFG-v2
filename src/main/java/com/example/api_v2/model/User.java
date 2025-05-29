@@ -80,6 +80,18 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference(value = "user-stats")
     private UserStats userStats;
+    
+    @Column(name = "current_streak")
+    private Integer currentStreak = 0;
+    
+    @Column(name = "best_streak")
+    private Integer bestStreak = 0;
+    
+    @Column(name = "last_study_date")
+    private java.time.LocalDate lastStudyDate;
+    
+    @Column(name = "total_study_days")
+    private Integer totalStudyDays = 0;
 
     @Column(name = "\"createdAt\"", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -8,10 +8,12 @@ import com.example.api_v2.repository.UserFlashcardProgressRepository;
 import com.example.api_v2.repository.UserStatsRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -59,6 +61,8 @@ public class UserFlashcardProgressService {
 
         // Calcular la nueva fecha de revisión
         LocalDateTime nextReviewDate = LocalDateTime.now().plusDays(interval);
+        ArrayList<LocalDateTime> reviews = new ArrayList<>(progress.getReviews());
+        reviews.add(LocalDateTime.now());
 
         // Actualizar valores en la entidad
         progress.setRepetitionLevel(newRepetitionLevel);
@@ -68,6 +72,8 @@ public class UserFlashcardProgressService {
         progress.setReviewCount(progress.getReviewCount() + 1);
         progress.setKnowledgeLevel(KnowledgeLevel.fromString(progressDto.getReviewResult()));
         progress.setStudyTimeInSeconds(progressDto.getStudyTimeInSeconds());
+        progress.setReviews(reviews);
+
 
         // Guardar cambios
         userFlashcardProgressRepository.save(progress);

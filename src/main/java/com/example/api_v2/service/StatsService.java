@@ -27,7 +27,7 @@ public class StatsService {
     private final FlashcardReviewRepository flashcardReviewRepository;
     private final CollectionRepository collectionRepository;
 
-    public FlashcardStatsDto getCollectionStats(Long collectionId) {
+    /*public FlashcardStatsDto getCollectionStats(Long collectionId) {
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> new RuntimeException("Collection not found"));
 
@@ -150,7 +150,7 @@ public class StatsService {
                 .count());
 
         return stats;
-    }
+    }*/
 
     private int countFlashcardsCreatedAfter(List<Flashcard> flashcards, LocalDateTime dateTime) {
         return (int) flashcards.stream()

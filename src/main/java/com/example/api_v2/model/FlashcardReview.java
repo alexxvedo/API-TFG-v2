@@ -33,4 +33,7 @@ public class FlashcardReview {
 
     @Column(name = "reviewed_at", nullable = false)
     private LocalDateTime reviewedAt;
+    
+    @Column(name = "user_id")
+    private String userId;
 }

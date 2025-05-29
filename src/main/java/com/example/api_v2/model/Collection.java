@@ -55,6 +55,8 @@ public class Collection {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+    
+    // Las estadísticas ahora son individuales por usuario y se almacenan en UserFlashcardProgress
 
     @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudySession> studySessions;

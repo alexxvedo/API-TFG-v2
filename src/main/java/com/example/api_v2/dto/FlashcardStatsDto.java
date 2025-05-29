@@ -49,17 +49,29 @@ public class FlashcardStatsDto {
     private Double reviewRate;
     private Double successRate;
     private Long dueForReview;
+    
+    // Estadísticas de actividad reciente para un usuario específico
+    private Long estudiadasHoy;
+    private Long estudiadas7Dias;
+    private Long estudiadas30Dias;
+    private Long tiempoEstudioTotal; // en segundos
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class FlashcardStatusCount {
         private String status;
+        private String label;
         private int count;
         private double porcentaje;
     }
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class FlashcardKnowledgeCount {
         private KnowledgeLevel knowledgeLevel;
+        private String label;
         private int count;
         private double porcentaje;
     }

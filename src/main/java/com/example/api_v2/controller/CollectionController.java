@@ -27,13 +27,15 @@ public class CollectionController {
         return ResponseEntity.ok(collectionService.getCollectionsByWorkspace(workspaceId));
     }
 
-    @GetMapping("/{collectionId}")
+    @GetMapping("/{collectionId}/user/{email}")
     @WorkspaceAccess
     public ResponseEntity<CollectionDto> getCollection(
             @PathVariable("workspaceId") Long workspaceId,
-            @PathVariable("collectionId") Long collectionId) {
+            @PathVariable("collectionId") Long collectionId,
+            @PathVariable("email") String email
+    ) {
         log.info("Obteniendo colección {} del workspace {}", collectionId, workspaceId);
-        return ResponseEntity.ok(collectionService.getCollection(workspaceId, collectionId));
+        return ResponseEntity.ok(collectionService.getCollection(workspaceId, collectionId, email));
     }
 
     @PostMapping("/user/{email}")

@@ -37,30 +37,6 @@ public class Flashcard {
     @JsonBackReference(value = "collection-flashcards")
     private Collection collection;
 
-    @Column(nullable = true)
-    @Enumerated(EnumType.STRING)
-    private KnowledgeLevel knowledgeLevel;
-
-    @Builder.Default
-    @Column(name = "repetition_level")
-    private Integer repetitionLevel = 0;
-
-    @Column(name = "next_review_date")
-    private LocalDateTime nextReviewDate;
-
-    @Column(name = "last_reviewed_at")
-    private LocalDateTime lastReviewedAt;
-
-    @Builder.Default
-    @Column(name = "status")
-    private String status = "active";
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-
-    @Column(columnDefinition = "TEXT")
-    private String tags;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     @JsonBackReference(value = "user-flashcards")
@@ -71,18 +47,6 @@ public class Flashcard {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @Builder.Default
-    @Column(name = "review_count")
-    private Integer reviewCount = 0;
-
-    @Builder.Default
-    @Column(name = "success_count")
-    private Integer successCount = 0;
-
-    @Builder.Default
-    @Column(name = "failure_count")
-    private Integer failureCount = 0;
 
     @Builder.Default
     @OneToMany(mappedBy = "flashcard", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -112,18 +76,10 @@ public class Flashcard {
         dto.setQuestion(question);
         dto.setAnswer(answer);
         dto.setCollectionId(collection.getId());
-        dto.setKnowledgeLevel(knowledgeLevel);
-        dto.setRepetitionLevel(repetitionLevel);
-        dto.setNextReviewDate(nextReviewDate);
-        dto.setLastReviewedAt(lastReviewedAt);
-        dto.setStatus(status);
-        dto.setNotes(notes);
-        dto.setTags(tags);
         dto.setCreatedBy(createdBy.toDto()); // Convertimos a DTO
         dto.setCreatedAt(createdAt);
         dto.setUpdatedAt(updatedAt);
-        dto.setUserFlashcardProgress(
-                userFlashcardProgress.stream().map(UserFlashcardProgress::toDto).collect(Collectors.toList()));
+
         return dto;
     }
 

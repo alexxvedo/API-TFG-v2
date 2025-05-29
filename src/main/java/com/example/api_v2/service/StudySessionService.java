@@ -30,6 +30,7 @@ public class StudySessionService {
     private final UserFlashcardProgressRepository userFlashcardProgressRepository;
     private final UserRepository userRepository;
     private final UserStatsRepository userStatsRepository;
+    private final FlashcardService flashcardService;
 
     public StudySessionDto createStudySession(StudySessionDto studySessionDto) {
         Collection collection = collectionRepository.findById(studySessionDto.getCollectionId())
@@ -44,13 +45,9 @@ public class StudySessionService {
     
         User user = userRepository.findByEmail(studySessionDto.getUser().getEmail()).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        List<Flashcard> flashcardsStudySession = flashcardRepository.findFlashcardsToReviewToday(collection.getId(), user.getId());
+        List<Flashcard> flashcardsStudySession = flashcardService.getFlashcardsForReview(collection.getId(), user.getId());
     
         System.out.println("📊 Flashcards encontradas: " + flashcardsStudySession.size());
-    
-        for (Flashcard f : flashcardsStudySession) {
-            System.out.println("🃏 Flashcard ID: " + f.getId() + " - Pregunta: " + f.getQuestion() + " - nextReviewDate: " + f.getNextReviewDate());
-        }
     
         studySession.setFlashcard(flashcardsStudySession);
         studySession.setTotalCards(flashcardsStudySession.size());
