@@ -66,10 +66,11 @@ public class DocumentController {
         String encodedFileName = UriUtils.encode(fileName, StandardCharsets.UTF_8);
 
         log.debug("Enviando archivo: {} con tipo: {}", fileName, document.getFileType());
-        
+
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(document.getFileType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName)
                 .body(document.getData());
     }
 

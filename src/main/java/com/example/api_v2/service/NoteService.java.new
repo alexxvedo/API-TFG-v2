@@ -1,0 +1,255 @@
+package com.example.api_v2.service;
+
+import com.example.api_v2.repository.CollectionRepository;
+import com.example.api_v2.repository.NoteRepository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.api_v2.dto.NoteDto;
+import com.example.api_v2.exception.ErrorUtils;
+import com.example.api_v2.model.Collection;
+import com.example.api_v2.model.Note;
+import com.example.api_v2.model.User;
+import com.example.api_v2.model.WorkspaceUser;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j
+public class NoteService {
+
+    private final NoteRepository noteRepository;
+    private final CollectionRepository collectionRepository;
+
+    public List<NoteDto> getNotes(Long collectionId) {
+        log.info("Obteniendo notas para la colección: {}", collectionId);
+        
+        // Validar los parámetros de entrada
+        if (collectionId == null || collectionId <= 0) {
+            log.error("ID de colección inválido: {}", collectionId);
+            ErrorUtils.throwValidationError("El ID de la colección debe ser un número positivo");
+        }
+        
+        // Verificar que la colección existe
+        if (!collectionRepository.existsById(collectionId)) {
+            log.error("Colección no encontrada con ID: {}", collectionId);
+            ErrorUtils.throwResourceNotFound("Colección", "id", collectionId);
+        }
+        
+        List<NoteDto> notes = noteRepository.findByCollectionId(collectionId)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+                
+        log.info("Se encontraron {} notas para la colección {}", notes.size(), collectionId);
+        return notes;
+    }
+
+    public NoteDto getNote(Long id) {
+        log.info("Obteniendo nota con ID: {}", id);
+        
+        // Validar los parámetros de entrada
+        if (id == null || id <= 0) {
+            log.error("ID de nota inválido: {}", id);
+            ErrorUtils.throwValidationError("El ID de la nota debe ser un número positivo");
+        }
+        
+        // Verificar si la nota existe antes de intentar recuperarla
+        if (!noteRepository.existsById(id)) {
+            log.error("Nota no encontrada con ID: {}", id);
+            ErrorUtils.throwResourceNotFound("Nota", "id", id);
+        }
+        
+        // Si llegamos aquí, sabemos que la nota existe
+        Note note = noteRepository.findById(id).get();
+                
+        log.info("Nota encontrada: {}", note.getNoteName());
+        return convertToDto(note);
+    }
+
+    public NoteDto createNote(Long collectionId, NoteDto noteDto, String email) {
+        log.info("Creando nota en la colección {} por usuario {}: {}", collectionId, email, noteDto);
+        
+        // Validar los parámetros de entrada
+        if (collectionId == null || collectionId <= 0) {
+            log.error("ID de colección inválido: {}", collectionId);
+            ErrorUtils.throwValidationError("El ID de la colección debe ser un número positivo");
+        }
+        
+        if (email == null || email.trim().isEmpty()) {
+            log.error("Email de usuario inválido: {}", email);
+            ErrorUtils.throwValidationError("El email del usuario es obligatorio");
+        }
+        
+        // Validar el DTO de la nota
+        if (noteDto == null) {
+            log.error("Datos de nota no proporcionados");
+            ErrorUtils.throwValidationError("Los datos de la nota son obligatorios");
+        }
+        
+        if (noteDto != null) {
+            if (noteDto.getNoteName() == null || noteDto.getNoteName().trim().isEmpty()) {
+                log.error("Nombre de nota no proporcionado");
+                ErrorUtils.throwValidationError("El nombre de la nota es obligatorio");
+            }
+            
+            if (noteDto.getContent() == null) {
+                log.error("Contenido de nota no proporcionado");
+                ErrorUtils.throwValidationError("El contenido de la nota es obligatorio");
+            }
+        }
+
+        // Verificar si la colección existe antes de intentar recuperarla
+        if (!collectionRepository.existsById(collectionId)) {
+            log.error("Colección no encontrada con ID: {}", collectionId);
+            ErrorUtils.throwResourceNotFound("Colección", "id", collectionId);
+        }
+        
+        // Si llegamos aquí, sabemos que la colección existe
+        Collection collection = collectionRepository.findById(collectionId).get();
+
+        // Obtenemos el usuario del workspace que crea la nota
+        User user = collection.getWorkspace().getWorkspaceUsers().stream()
+                .map(WorkspaceUser::getUser)
+                .filter(u -> u.getEmail().equals(email))
+                .findFirst()
+                .orElseGet(() -> {
+                    log.error("Usuario no encontrado con email: {}", email);
+                    ErrorUtils.throwResourceNotFound("Usuario", "email", email);
+                    return null; // Esta línea nunca se ejecutará, pero es necesaria para que compile
+                });
+
+        Note note = Note.builder()
+                .noteName(noteDto.getNoteName())
+                .content(noteDto.getContent())
+                .collection(collection)
+                .createdBy(user)
+                .build();
+
+        try {
+            note = noteRepository.save(note);
+            log.info("Nota creada con ID: {}", note.getId());
+        } catch (Exception e) {
+            log.error("Error al guardar la nota: {}", e.getMessage());
+            ErrorUtils.throwApiError(com.example.api_v2.exception.ErrorCode.OPERATION_FAILED, "Error al guardar la nota");
+        }
+
+        return convertToDto(note);
+    }
+
+    public NoteDto updateNote(Long collectionId, Long id, NoteDto noteDto) {
+        log.info("Actualizando nota {} en la colección {}: {}", id, collectionId, noteDto);
+        
+        // Validar los parámetros de entrada
+        if (collectionId == null || collectionId <= 0) {
+            log.error("ID de colección inválido: {}", collectionId);
+            ErrorUtils.throwValidationError("El ID de la colección debe ser un número positivo");
+        }
+        
+        if (id == null || id <= 0) {
+            log.error("ID de nota inválido: {}", id);
+            ErrorUtils.throwValidationError("El ID de la nota debe ser un número positivo");
+        }
+        
+        // Validar el DTO de la nota
+        if (noteDto == null) {
+            log.error("Datos de nota no proporcionados");
+            ErrorUtils.throwValidationError("Los datos de la nota son obligatorios");
+        }
+        
+        if (noteDto != null) {
+            if (noteDto.getNoteName() == null || noteDto.getNoteName().trim().isEmpty()) {
+                log.error("Nombre de nota no proporcionado");
+                ErrorUtils.throwValidationError("El nombre de la nota es obligatorio");
+            }
+        }
+
+        // Verificar que la colección existe
+        if (!collectionRepository.existsById(collectionId)) {
+            log.error("Colección no encontrada con ID: {}", collectionId);
+            ErrorUtils.throwResourceNotFound("Colección", "id", collectionId);
+        }
+
+        // Verificar si la nota existe antes de intentar recuperarla
+        if (!noteRepository.existsById(id)) {
+            log.error("Nota no encontrada con ID: {}", id);
+            ErrorUtils.throwResourceNotFound("Nota", "id", id);
+        }
+        
+        // Si llegamos aquí, sabemos que la nota existe
+        Note note = noteRepository.findById(id).get();
+                
+        // Verificar que la nota pertenece a la colección especificada
+        if (!note.getCollection().getId().equals(collectionId)) {
+            log.error("La nota {} no pertenece a la colección {}", id, collectionId);
+            ErrorUtils.throwValidationError("La nota no pertenece a la colección especificada");
+        }
+
+        updateNoteFromDto(noteDto, note);
+        note.setUpdatedAt(LocalDateTime.now());
+
+        try {
+            note = noteRepository.save(note);
+            log.info("Nota actualizada: {}", note.getId());
+        } catch (Exception e) {
+            log.error("Error al actualizar la nota: {}", e.getMessage());
+            ErrorUtils.throwApiError(com.example.api_v2.exception.ErrorCode.OPERATION_FAILED, "Error al actualizar la nota");
+        }
+
+        return convertToDto(note);
+    }
+
+    public void deleteNote(Long id) {
+        log.info("Eliminando nota con ID: {}", id);
+        
+        // Validar los parámetros de entrada
+        if (id == null || id <= 0) {
+            log.error("ID de nota inválido: {}", id);
+            ErrorUtils.throwValidationError("El ID de la nota debe ser un número positivo");
+        }
+
+        // Verificar si la nota existe antes de intentar recuperarla
+        if (!noteRepository.existsById(id)) {
+            log.error("Nota no encontrada con ID: {}", id);
+            ErrorUtils.throwResourceNotFound("Nota", "id", id);
+        }
+        
+        // Si llegamos aquí, sabemos que la nota existe
+        Note note = noteRepository.findById(id).get();
+
+        try {
+            noteRepository.delete(note);
+            log.info("Nota eliminada: {}", id);
+        } catch (Exception e) {
+            log.error("Error al eliminar la nota: {}", e.getMessage());
+            ErrorUtils.throwApiError(com.example.api_v2.exception.ErrorCode.OPERATION_FAILED, "Error al eliminar la nota");
+        }
+    }
+
+    private NoteDto convertToDto(Note note) {
+        // No es necesario forzar la inicialización
+
+        return NoteDto.builder()
+                .id(note.getId())
+                .collectionId(note.getCollection().getId())
+                .noteName(note.getNoteName())
+                .content(note.getContent())
+                .createdAt(note.getCreatedAt())
+                .updatedAt(note.getUpdatedAt())
+                .createdBy(note.getCreatedBy() != null ? note.getCreatedBy().toDto() : null)
+                .build();
+    }
+
+    private void updateNoteFromDto(NoteDto noteDto, Note note) {
+        note.setNoteName(noteDto.getNoteName());
+        note.setContent(noteDto.getContent());
+        note.setUpdatedAt(LocalDateTime.now());
+    }
+}

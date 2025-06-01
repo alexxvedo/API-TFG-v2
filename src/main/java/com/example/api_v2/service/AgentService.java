@@ -284,7 +284,7 @@ public class AgentService {
 
         requestBody.put("content", documentContent);
         requestBody.put("desired_length", desiredLength);
-        requestBody.put("output_format", "tiptap");
+        requestBody.put("output_format", "markdown");
 
         System.out.println("Enviando contenido del documento al agente Python con longitud deseada: " + desiredLength
                 + ", contenido: " +
