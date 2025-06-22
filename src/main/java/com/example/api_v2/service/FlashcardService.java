@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -24,12 +25,9 @@ public class FlashcardService {
     private final FlashcardRepository flashcardRepository;
     private final CollectionRepository collectionRepository;
     private final FlashcardReviewRepository reviewRepository;
-    private final WorkspaceUserRepository workspaceUserRepository;
-    private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
     private final UserFlashcardProgressRepository userFlashcardProgressRepository;
     private final UserStatsService userStatsService;
-
 
     /**
      * Obtiene las flashcards de una colección con el progreso individual del
@@ -37,7 +35,7 @@ public class FlashcardService {
      * NO crea registros de progreso automáticamente, solo devuelve los existentes.
      * 
      * @param collectionId ID de la colección
-     * @param email       ID del usuario
+     * @param email        ID del usuario
      * @return Lista de flashcards con su progreso individual
      */
     @Transactional(readOnly = true) // Cambiado a readOnly para evitar modificaciones
@@ -51,7 +49,6 @@ public class FlashcardService {
         List<UserFlashcardProgress> existingProgresses = userFlashcardProgressRepository
                 .findByCollectionIdAndUserId(collectionId, user.get().getId());
 
-
         // Crear un mapa para acceder rápidamente a los progresos por flashcardId
         Map<Long, UserFlashcardProgress> progressMap = existingProgresses.stream()
                 .collect(Collectors.toMap(
@@ -59,7 +56,6 @@ public class FlashcardService {
                         progress -> progress,
                         // En caso de duplicados, mantener el primero
                         (existing, replacement) -> existing));
-
 
         // Convertir las flashcards a DTOs con progreso individual (solo si existe)
         return flashcards.stream()
@@ -84,17 +80,26 @@ public class FlashcardService {
                         dto.setReviews(progress.getReviews());
 
                         // Establecer el estado de la flashcard basado en el progreso del usuario
-                        // Si la flashcard tiene un nextReviewDate  posterior a hoy, entonces es "completada"
-                        // Si la flashcard tiene un nextReviewDate anterior a hoy o de hoy, entonces es "revision"
+                        // Si la flashcard tiene un nextReviewDate posterior a hoy, entonces es
+                        // "completada"
+                        // Si la flashcard tiene un nextReviewDate anterior a hoy o de hoy, entonces es
+                        // "revision"
                         // Si la flashcard no tiene un nextReviewDate, entonces es "sinHacer"
                         //
-                        if (progress.getNextReviewDate() != null && progress.getNextReviewDate().toLocalDate().isAfter(LocalDate.now())) {
-                            dto.setStatus("completada");
+
+                        if(progress.getKnowledgeLevel() == null){
+                            dto.setStatus("sinHacer");
+                        } else if (progress.getNextReviewDate() != null){
+                            if(progress.getNextReviewDate().toLocalDate().isAfter(LocalDate.now())) {
+                                dto.setStatus("completada");
+                            } else {
+                                dto.setStatus("revision");
+                            }
                         } else {
-                            dto.setStatus("revision");
+                            dto.setStatus("sinHacer");
                         }
+                              
                     } else {
-                        // Si no hay progreso, establecer estado por defecto
                         dto.setStatus("sinHacer");
                     }
 
@@ -121,17 +126,15 @@ public class FlashcardService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        // Lista para almacenar flashcards que necesitan revisión
-        List<Flashcard> dueFlashcards = new ArrayList<>();
+        // Lista para almacenar flashcards con su información de prioridad
+        List<FlashcardPriority> flashcardPriorities = new ArrayList<>();
 
-        // Para cada flashcard, evaluar si necesita revisión según el progreso
-        // individual
+        // Para cada flashcard, evaluar su prioridad basada en el progreso individual
         for (Flashcard flashcard : flashcards) {
-            // Buscar o crear el progreso individual para esta flashcard
             UserFlashcardProgress progress = userFlashcardProgressRepository
                     .findByFlashcardIdAndUserId(flashcard.getId(), userId)
                     .orElseGet(() -> {
-                        // Si no existe progreso, crear uno nuevo
+                        // Si no existe progreso, crear uno nuevo con alta prioridad
                         UserFlashcardProgress newProgress = new UserFlashcardProgress();
                         newProgress.setUser(user);
                         newProgress.setFlashcard(flashcard);
@@ -141,75 +144,49 @@ public class FlashcardService {
                         newProgress.setReviewCount(0);
                         newProgress.setSuccessCount(0);
                         newProgress.setFailureCount(0);
-                        newProgress.setLastReviewedAt(null);
-                        newProgress.setNextReviewDate(now); // Disponible para revisar ahora
+                        newProgress.setNextReviewDate(now);
                         return userFlashcardProgressRepository.save(newProgress);
                     });
 
-            // Determinar si esta flashcard necesita revisión
-            boolean needsReview = progress.getLastReviewedAt() == null ||
-                    (progress.getNextReviewDate() != null &&
-                            progress.getNextReviewDate().isBefore(now));
-
-            if (needsReview) {
-                dueFlashcards.add(flashcard);
-            }
+            // Calcular la prioridad
+            double priority = calculatePriority(progress, now);
+            flashcardPriorities.add(new FlashcardPriority(flashcard, priority));
         }
 
-        // Ordenar las flashcards por prioridad según el progreso individual
-        dueFlashcards.sort((f1, f2) -> {
-            UserFlashcardProgress p1 = userFlashcardProgressRepository
-                    .findByFlashcardIdAndUserId(f1.getId(), userId).orElse(null);
-            UserFlashcardProgress p2 = userFlashcardProgressRepository
-                    .findByFlashcardIdAndUserId(f2.getId(), userId).orElse(null);
+        // Ordenar las flashcards por prioridad (mayor prioridad primero)
+        flashcardPriorities.sort((fp1, fp2) -> Double.compare(fp2.priority(), fp1.priority()));
 
-            if (p1 == null)
-                return -1;
-            if (p2 == null)
-                return 1;
-
-            // Criterio 1: Primero las que nunca se han revisado
-            if (p1.getLastReviewedAt() == null && p2.getLastReviewedAt() != null) {
-                return -1;
-            }
-            if (p1.getLastReviewedAt() != null && p2.getLastReviewedAt() == null) {
-                return 1;
-            }
-
-            // Criterio 2: Luego por nivel de conocimiento (primero las que peor se conocen)
-            if (p1.getKnowledgeLevel() != p2.getKnowledgeLevel()) {
-                if (p1.getKnowledgeLevel() == null)
-                    return -1;
-                if (p2.getKnowledgeLevel() == null)
-                    return 1;
-
-                // Ordenar por nivel de conocimiento (MAL -> REGULAR -> BIEN)
-                if (p1.getKnowledgeLevel() == KnowledgeLevel.MAL)
-                    return -1;
-                if (p2.getKnowledgeLevel() == KnowledgeLevel.MAL)
-                    return 1;
-                if (p1.getKnowledgeLevel() == KnowledgeLevel.REGULAR)
-                    return -1;
-                if (p2.getKnowledgeLevel() == KnowledgeLevel.REGULAR)
-                    return 1;
-            }
-
-            // Criterio 3: Luego por fecha de próxima revisión (primero las más atrasadas)
-            if (p1.getNextReviewDate() != null && p2.getNextReviewDate() != null) {
-                return p1.getNextReviewDate().compareTo(p2.getNextReviewDate());
-            }
-
-            // Criterio 4: Luego por nivel de repetición (primero las de menor nivel)
-            if (p1.getRepetitionLevel() != null && p2.getRepetitionLevel() != null) {
-                return p1.getRepetitionLevel().compareTo(p2.getRepetitionLevel());
-            }
-
-            // Si todo lo demás es igual, ordenar por ID
-            return f1.getId().compareTo(f2.getId());
-        });
-
-        return dueFlashcards;
+        // Devolver las 25 flashcards más prioritarias
+        return flashcardPriorities.stream()
+                .limit(25)
+                .map(FlashcardPriority::flashcard)
+                .collect(Collectors.toList());
     }
+
+    private double calculatePriority(UserFlashcardProgress progress, LocalDateTime now) {
+        // Factor 1: Tiempo transcurrido desde la fecha de repaso prevista
+        double daysOverdue = progress.getNextReviewDate() != null ?
+                ChronoUnit.HOURS.between(progress.getNextReviewDate(), now) / 24.0 : 
+                Double.MAX_VALUE;
+        
+        // Factor 2: Ease Factor invertido (menor ease factor = mayor prioridad)
+        double easeFactorPriority = progress.getEaseFactor() != null ?
+                5.0 - progress.getEaseFactor() : // 5.0 es un valor máximo arbitrario para el ease factor
+                2.5; // valor por defecto
+
+        // Factor 3: Número de fallos
+        double failuresPriority = progress.getFailureCount() != null ?
+                progress.getFailureCount() * 0.5 : // multiplicador para dar más peso a los fallos
+                0.0;
+
+        // Combinar factores (los pesos pueden ajustarse según necesidad)
+        return (daysOverdue * 0.5) + // 50% del peso para el tiempo transcurrido
+               (easeFactorPriority * 0.3) + // 30% del peso para el ease factor
+               (failuresPriority * 0.2); // 20% del peso para los fallos
+    }
+
+    // Record para mantener la flashcard junto con su prioridad
+    private record FlashcardPriority(Flashcard flashcard, double priority) {}
 
     public FlashcardStatsDto getFlashcardStats(Long collectionId, String email) {
         // Obtener el usuario por email
@@ -550,7 +527,6 @@ public class FlashcardService {
         updateFlashcardFromDto(flashcard, flashcardDto);
         flashcard.setUpdatedAt(LocalDateTime.now());
 
-
         return flashcardRepository.save(flashcard).toDto();
     }
 
@@ -750,7 +726,6 @@ public class FlashcardService {
     // estadísticas
     // ahora son individuales por usuario y se almacenan en UserFlashcardProgress
 
-
     private void updateFlashcardFromDto(Flashcard flashcard, FlashcardDto flashcardDto) {
         if (flashcardDto.getQuestion() != null) {
             flashcard.setQuestion(flashcardDto.getQuestion());
@@ -758,7 +733,8 @@ public class FlashcardService {
         if (flashcardDto.getAnswer() != null) {
             flashcard.setAnswer(flashcardDto.getAnswer());
         }
-        UserFlashcardProgress userFlashcardProgress = userFlashcardProgressRepository.findByFlashcardIdAndUserId(flashcard.getId(), flashcardDto.getCreatedBy().getId())
+        UserFlashcardProgress userFlashcardProgress = userFlashcardProgressRepository
+                .findByFlashcardIdAndUserId(flashcard.getId(), flashcardDto.getCreatedBy().getId())
                 .orElse(null);
         if (userFlashcardProgress != null) {
             userFlashcardProgress.setEaseFactor(2.5);
@@ -778,9 +754,10 @@ public class FlashcardService {
         dto.setKnowledgeLevel(userFlashcardProgress.getKnowledgeLevel());
         dto.setNextReviewDate(userFlashcardProgress.getNextReviewDate());
         dto.setLastReviewedAt(userFlashcardProgress.getLastReviewedAt());
-        if (userFlashcardProgress.getNextReviewDate().toLocalDate() != null && userFlashcardProgress.getNextReviewDate().toLocalDate().isAfter(LocalDate.now())) {
+        if (userFlashcardProgress.getNextReviewDate().toLocalDate() != null
+                && userFlashcardProgress.getNextReviewDate().toLocalDate().isAfter(LocalDate.now())) {
             dto.setStatus("completada");
-        } else if(userFlashcardProgress.getNextReviewDate() == null) {
+        } else if (userFlashcardProgress.getNextReviewDate() == null) {
             dto.setStatus("sinHacer");
         } else {
             dto.setStatus("revision");
@@ -795,7 +772,8 @@ public class FlashcardService {
     }
 
     public FlashcardDto convertToDto(Flashcard flashcard, String userId) {
-        Optional<UserFlashcardProgress> userFlashcardProgress = userFlashcardProgressRepository.findByFlashcardIdAndUserId(flashcard.getId(), userId);
+        Optional<UserFlashcardProgress> userFlashcardProgress = userFlashcardProgressRepository
+                .findByFlashcardIdAndUserId(flashcard.getId(), userId);
         FlashcardDto dto = new FlashcardDto();
         dto.setId(flashcard.getId());
         dto.setQuestion(flashcard.getQuestion());
@@ -804,9 +782,10 @@ public class FlashcardService {
         dto.setKnowledgeLevel(userFlashcardProgress.get().getKnowledgeLevel());
         dto.setNextReviewDate(userFlashcardProgress.get().getNextReviewDate());
         dto.setLastReviewedAt(userFlashcardProgress.get().getLastReviewedAt());
-        if (userFlashcardProgress.get().getNextReviewDate() != null && userFlashcardProgress.get().getNextReviewDate().toLocalDate().isAfter(LocalDate.now())) {
+        if (userFlashcardProgress.get().getNextReviewDate() != null
+                && userFlashcardProgress.get().getNextReviewDate().toLocalDate().isAfter(LocalDate.now())) {
             dto.setStatus("completada");
-        } else if(userFlashcardProgress.get().getNextReviewDate() == null) {
+        } else if (userFlashcardProgress.get().getNextReviewDate() == null) {
             dto.setStatus("sinHacer");
         } else {
             dto.setStatus("revision");
@@ -819,7 +798,5 @@ public class FlashcardService {
         dto.setFailureCount(userFlashcardProgress.get().getFailureCount());
         return dto;
     }
-
-
 
 }

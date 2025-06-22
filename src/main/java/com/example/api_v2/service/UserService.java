@@ -23,17 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final WorkspaceRepository workspaceRepository;
     private final WorkspaceUserRepository workspaceUserRepository;
     private final WorkspaceService workspaceService;
-    private final UserStatsService userStatsService;
 
     public UserDto getUser(String id) {
         return userRepository.findById(id).map(User::toDto)
                 .orElse(null);
     }
-
-
 
     public User createUser(String id) {
         if (id == null || id.isEmpty()) {
@@ -62,7 +58,6 @@ public class UserService {
             workspaceService.createWorkspace(workspaceDto, user.getEmail());
 
         }
-
 
         return user;
     }

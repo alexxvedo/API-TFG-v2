@@ -23,71 +23,71 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class ChatService {
 
-    private final ChatRepository chatRepository;
-    private final MessageRepository messageRepository;
-    private final UserRepository userRepository;
+        private final ChatRepository chatRepository;
+        private final MessageRepository messageRepository;
+        private final UserRepository userRepository;
 
-    public ChatDto getChat(Long workspaceId) {
-        return chatRepository.findByWorkspaceId(workspaceId)
-                .map(this::mapToChatDto)
-                .orElse(null);
-    }
+        public ChatDto getChat(Long workspaceId) {
+                return chatRepository.findByWorkspaceId(workspaceId)
+                                .map(this::mapToChatDto)
+                                .orElse(null);
+        }
 
-    @Transactional
-    public MessageDto addMessage(Long workspaceId, String content, String senderEmail) {
-        Chat chat = chatRepository.findByWorkspaceId(workspaceId)
-                .orElseGet(() -> {
-                    Chat newChat = Chat.builder()
-                            .workspaceId(workspaceId)
-                            .createdAt(LocalDateTime.now())
-                            .messages(new ArrayList<>())
-                            .build();
-                    return chatRepository.save(newChat);
-                });
+        @Transactional
+        public MessageDto addMessage(Long workspaceId, String content, String senderEmail) {
+                Chat chat = chatRepository.findByWorkspaceId(workspaceId)
+                                .orElseGet(() -> {
+                                        Chat newChat = Chat.builder()
+                                                        .workspaceId(workspaceId)
+                                                        .createdAt(LocalDateTime.now())
+                                                        .messages(new ArrayList<>())
+                                                        .build();
+                                        return chatRepository.save(newChat);
+                                });
 
-        User user = userRepository.findByEmail(senderEmail)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                User user = userRepository.findByEmail(senderEmail)
+                                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        Message message = Message.builder()
-                .content(content)
-                .userId(user.getId())
-                .userName(user.getName())
-                .userEmail(user.getEmail())
-                .userImage(user.getImage())
-                .timestamp(LocalDateTime.now())
-                .chat(chat)
-                .build();
+                Message message = Message.builder()
+                                .content(content)
+                                .userId(user.getId())
+                                .userName(user.getName())
+                                .userEmail(user.getEmail())
+                                .userImage(user.getImage())
+                                .timestamp(LocalDateTime.now())
+                                .chat(chat)
+                                .build();
 
-        message = messageRepository.save(message);
+                message = messageRepository.save(message);
 
-        return mapToMessageDto(message);
-    }
+                return mapToMessageDto(message);
+        }
 
-    private ChatDto mapToChatDto(Chat chat) {
-        return ChatDto.builder()
-                .id(chat.getId())
-                .workspaceId(chat.getWorkspaceId())
-                .createdAt(chat.getCreatedAt())
-                .messages(chat.getMessages() != null
-                        ? chat.getMessages().stream()
-                                .map(this::mapToMessageDto)
-                                .toList()
-                        : Collections.emptyList())
-                .build();
-    }
+        private ChatDto mapToChatDto(Chat chat) {
+                return ChatDto.builder()
+                                .id(chat.getId())
+                                .workspaceId(chat.getWorkspaceId())
+                                .createdAt(chat.getCreatedAt())
+                                .messages(chat.getMessages() != null
+                                                ? chat.getMessages().stream()
+                                                                .map(this::mapToMessageDto)
+                                                                .toList()
+                                                : Collections.emptyList())
+                                .build();
+        }
 
-    private MessageDto mapToMessageDto(Message message) {
-        UserDto sender = new UserDto();
-        sender.setId(message.getUserId());
-        sender.setName(message.getUserName());
-        sender.setEmail(message.getUserEmail());
-        sender.setImage(message.getUserImage());
+        private MessageDto mapToMessageDto(Message message) {
+                UserDto sender = new UserDto();
+                sender.setId(message.getUserId());
+                sender.setName(message.getUserName());
+                sender.setEmail(message.getUserEmail());
+                sender.setImage(message.getUserImage());
 
-        return MessageDto.builder()
-                .id(message.getId())
-                .content(message.getContent())
-                .sender(sender)
-                .timestamp(message.getTimestamp())
-                .build();
-    }
+                return MessageDto.builder()
+                                .id(message.getId())
+                                .content(message.getContent())
+                                .sender(sender)
+                                .timestamp(message.getTimestamp())
+                                .build();
+        }
 }

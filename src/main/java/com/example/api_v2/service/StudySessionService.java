@@ -26,8 +26,6 @@ public class StudySessionService {
 
     private final StudySessionRepository studySessionRepository;
     private final CollectionRepository collectionRepository;
-    private final FlashcardRepository flashcardRepository;
-    private final UserFlashcardProgressRepository userFlashcardProgressRepository;
     private final UserRepository userRepository;
     private final UserStatsRepository userStatsRepository;
     private final FlashcardService flashcardService;
@@ -35,30 +33,30 @@ public class StudySessionService {
     public StudySessionDto createStudySession(StudySessionDto studySessionDto) {
         Collection collection = collectionRepository.findById(studySessionDto.getCollectionId())
                 .orElseThrow(() -> new EntityNotFoundException("Collection not found"));
-    
+
         StudySession studySession = new StudySession();
         studySession.setCollection(collection);
         studySession.setStartTime(LocalDateTime.now());
         studySession.setCompleted(false);
-    
-        System.out.println("📌 Buscando flashcards para colección ID: " + studySessionDto.getUser().getEmail());
-    
-        User user = userRepository.findByEmail(studySessionDto.getUser().getEmail()).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        List<Flashcard> flashcardsStudySession = flashcardService.getFlashcardsForReview(collection.getId(), user.getId());
-    
+        System.out.println("📌 Buscando flashcards para colección ID: " + studySessionDto.getUser().getEmail());
+
+        User user = userRepository.findByEmail(studySessionDto.getUser().getEmail())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        List<Flashcard> flashcardsStudySession = flashcardService.getFlashcardsForReview(collection.getId(),
+                user.getId());
+
         System.out.println("📊 Flashcards encontradas: " + flashcardsStudySession.size());
-    
+
         studySession.setFlashcard(flashcardsStudySession);
         studySession.setTotalCards(flashcardsStudySession.size());
         studySession.setUser(user);
-    
+
         studySession = studySessionRepository.save(studySession);
 
-        
         return convertToDto(studySession);
     }
-    
 
     public StudySessionDto getStudySession(Long id) {
         StudySession studySession = studySessionRepository.findById(id)
@@ -66,8 +64,6 @@ public class StudySessionService {
 
         return convertToDto(studySession);
     }
-
-    
 
     public StudySessionDto completeStudySession(Long id) {
         StudySession studySession = studySessionRepository.findById(id)

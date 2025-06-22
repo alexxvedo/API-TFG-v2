@@ -6,14 +6,12 @@ import com.example.api_v2.model.Document;
 import com.example.api_v2.repository.CollectionRepository;
 import com.example.api_v2.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +24,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final CollectionRepository collectionRepository;
-    private final AgentService agentService;  // 🔹 Ahora usamos el servicio del agente
-
+    private final AgentService agentService; // 🔹 Ahora usamos el servicio del agente
 
     @Transactional
     public Document uploadFile(Long collectionId, MultipartFile file) throws IOException {
@@ -44,8 +41,6 @@ public class DocumentService {
         document.setData(file.getBytes());
 
         Document savedDocument = documentRepository.save(document);
-
-
 
         // 🔹 Enviar documento al agente para indexación y análisis
         agentService.processDocument(file.getBytes())
@@ -65,15 +60,11 @@ public class DocumentService {
                     savedDocument.setEmbedding(embedding);
                     return Mono.fromCallable(() -> documentRepository.save(savedDocument));
                 })
-                
-                .subscribe();
 
+                .subscribe();
 
         return savedDocument;
     }
-
-
-    
 
     @Transactional(readOnly = true)
     public List<DocumentDto> getDocumentsByCollection(Long collectionId) {
@@ -84,9 +75,9 @@ public class DocumentService {
             return Collections.emptyList();
         } else {
             return documentos
-            .stream()
-            .map(DocumentDto::new)
-            .collect(Collectors.toList());
+                    .stream()
+                    .map(DocumentDto::new)
+                    .collect(Collectors.toList());
         }
     }
 

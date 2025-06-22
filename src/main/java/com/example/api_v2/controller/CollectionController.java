@@ -12,6 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador REST para la gestión de colecciones
+ * 
+ * Las colecciones son contenedores de materiales de estudio dentro de un workspace.
+ * Permiten organizar flashcards, documentos y notas de manera estructurada.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/workspaces/{workspaceId}/collections")
@@ -20,6 +26,12 @@ public class CollectionController {
 
     private final CollectionService collectionService;
 
+    /**
+     * Obtiene todas las colecciones de un workspace
+     * 
+     * @param workspaceId ID del workspace
+     * @return Lista de colecciones del workspace
+     */
     @GetMapping
     @WorkspaceAccess
     public ResponseEntity<List<CollectionDto>> getCollectionsByWorkspace(
@@ -35,6 +47,14 @@ public class CollectionController {
         return ResponseEntity.ok(collectionService.getCollectionsByWorkspace(workspaceId));
     }
 
+    /**
+     * Obtiene una colección específica con información del usuario
+     * 
+     * @param workspaceId ID del workspace
+     * @param collectionId ID de la colección
+     * @param email Email del usuario
+     * @return Datos de la colección con información específica del usuario
+     */
     @GetMapping("/{collectionId}/user/{email}")
     @WorkspaceAccess
     public ResponseEntity<CollectionDto> getCollection(
@@ -63,6 +83,14 @@ public class CollectionController {
         return ResponseEntity.ok(collectionService.getCollection(workspaceId, collectionId, email));
     }
 
+    /**
+     * Crea una nueva colección en el workspace
+     * 
+     * @param workspaceId ID del workspace donde crear la colección
+     * @param collectionDto Datos de la nueva colección
+     * @param email Email del usuario que crea la colección
+     * @return Datos de la colección creada
+     */
     @PostMapping("/user/{email}")
     @WorkspaceEditAccess
     public ResponseEntity<CollectionDto> createCollection(
@@ -97,6 +125,14 @@ public class CollectionController {
         return ResponseEntity.ok(collectionService.createCollection(workspaceId, collectionDto, email));
     }
 
+    /**
+     * Actualiza una colección existente
+     * 
+     * @param workspaceId ID del workspace
+     * @param collectionId ID de la colección a actualizar
+     * @param collectionDto Nuevos datos de la colección
+     * @return Datos de la colección actualizada
+     */
     @PutMapping("/{collectionId}")
     @WorkspaceEditAccess
     public ResponseEntity<CollectionDto> updateCollection(
@@ -131,6 +167,13 @@ public class CollectionController {
         return ResponseEntity.ok(collectionService.updateCollection(workspaceId, collectionId, collectionDto));
     }
 
+    /**
+     * Elimina una colección del workspace
+     * 
+     * @param workspaceId ID del workspace
+     * @param collectionId ID de la colección a eliminar
+     * @return Respuesta vacía indicando éxito
+     */
     @DeleteMapping("/{collectionId}")
     @WorkspaceEditAccess
     public ResponseEntity<Void> deleteCollection(

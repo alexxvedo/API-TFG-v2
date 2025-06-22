@@ -16,6 +16,7 @@ public class StudySessionDto {
     private int incorrectAnswers;
     private List<FlashcardDto> flashcards;
     private UserDto user;
+    private String mode;
 
     @Data
     public static class FlashcardActivityDto {

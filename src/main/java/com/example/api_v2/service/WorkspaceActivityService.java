@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
 public class WorkspaceActivityService {
 
     private final WorkspaceActivityRepository workspaceActivityRepository;
-    private final WorkspaceRepository workspaceRepository;
-    private final UserRepository userRepository;
 
     public List<WorkspaceActivityDto> getActivitiesByWorkspace(Long workspaceId) {
         return workspaceActivityRepository.findAllByWorkspaceIdOrderByTimestampDesc(workspaceId).stream()
@@ -36,5 +34,4 @@ public class WorkspaceActivityService {
                 .collect(Collectors.toList());
     }
 
-    
 }

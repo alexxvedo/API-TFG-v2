@@ -1,7 +1,6 @@
 package com.example.api_v2.service;
 
 import com.example.api_v2.dto.CollectionDto;
-import com.example.api_v2.exception.ErrorCode;
 import com.example.api_v2.exception.ErrorUtils;
 import com.example.api_v2.model.Collection;
 import com.example.api_v2.model.Flashcard;
@@ -43,7 +42,7 @@ public class CollectionService {
 
     public CollectionDto getCollection(Long workspaceId, Long collectionId, String email) {
         log.debug("Buscando colección con ID: {} en workspace: {}", collectionId, workspaceId);
-        
+
         // Buscar la colección
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> {
@@ -76,13 +75,13 @@ public class CollectionService {
 
     public CollectionDto createCollection(Long workspaceId, CollectionDto collectionDto, String email) {
         log.debug("Creando colección en workspace {} para usuario {}", workspaceId, email);
-        
+
         // Validar datos de entrada
         if (collectionDto.getName() == null || collectionDto.getName().trim().isEmpty()) {
             log.error("Intento de crear colección sin nombre en workspace {}", workspaceId);
             ErrorUtils.throwValidationError("El nombre de la colección es obligatorio");
         }
-        
+
         // Buscar el workspace
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> {
@@ -98,11 +97,13 @@ public class CollectionService {
                     ErrorUtils.throwResourceNotFound("Usuario", "email", email);
                     return null;
                 });
-        
+
         // Verificar si ya existe una colección con el mismo nombre en este workspace
-        boolean existsWithSameName = collectionRepository.findByWorkspaceIdAndName(workspaceId, collectionDto.getName()).isPresent();
+        boolean existsWithSameName = collectionRepository.findByWorkspaceIdAndName(workspaceId, collectionDto.getName())
+                .isPresent();
         if (existsWithSameName) {
-            log.error("Ya existe una colección con nombre '{}' en el workspace {}", collectionDto.getName(), workspaceId);
+            log.error("Ya existe una colección con nombre '{}' en el workspace {}", collectionDto.getName(),
+                    workspaceId);
             ErrorUtils.throwDuplicateResource("Colección", "nombre", collectionDto.getName());
         }
 
@@ -112,27 +113,27 @@ public class CollectionService {
         collection.setDescription(collectionDto.getDescription());
         collection.setWorkspace(workspace);
         collection.setCreatedBy(user);
-        
+
         // Añadir tags si existen
         if (collectionDto.getTags() != null && !collectionDto.getTags().isEmpty()) {
             collection.setTags(collectionDto.getTags());
         }
-        
+
         // Añadir color si existe
         if (collectionDto.getColor() != null && !collectionDto.getColor().isEmpty()) {
             collection.setColor(collectionDto.getColor());
         }
-        
+
         try {
             collection = collectionRepository.save(collection);
-            
+
             // Registrar la actividad
             WorkspaceActivity activity = new WorkspaceActivity();
             activity.setWorkspace(workspace);
             activity.setUser(user);
             activity.setAction("Created collection: " + collectionDto.getName());
             workspaceActivityRepository.save(activity);
-            
+
             log.info("Colección creada correctamente: {} en workspace {}", collection.getId(), workspaceId);
             return convertToDto(collection);
         } catch (Exception e) {
@@ -144,13 +145,13 @@ public class CollectionService {
 
     public CollectionDto updateCollection(Long workspaceId, Long collectionId, CollectionDto collectionDto) {
         log.debug("Actualizando colección {} en workspace {}", collectionId, workspaceId);
-        
+
         // Validar datos de entrada
         if (collectionDto.getName() == null || collectionDto.getName().trim().isEmpty()) {
             log.error("Intento de actualizar colección sin nombre: {}", collectionId);
             ErrorUtils.throwValidationError("El nombre de la colección es obligatorio");
         }
-        
+
         // Buscar la colección
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> {
@@ -164,23 +165,26 @@ public class CollectionService {
             log.error("La colección {} no pertenece al workspace {}", collectionId, workspaceId);
             ErrorUtils.throwInvalidOperation("La colección no pertenece al workspace especificado");
         }
-        
-        // Verificar si ya existe otra colección con el mismo nombre en este workspace (excluyendo esta misma)
-        Optional<Collection> existingWithSameName = collectionRepository.findByWorkspaceIdAndName(workspaceId, collectionDto.getName());
+
+        // Verificar si ya existe otra colección con el mismo nombre en este workspace
+        // (excluyendo esta misma)
+        Optional<Collection> existingWithSameName = collectionRepository.findByWorkspaceIdAndName(workspaceId,
+                collectionDto.getName());
         if (existingWithSameName.isPresent() && !existingWithSameName.get().getId().equals(collectionId)) {
-            log.error("Ya existe otra colección con nombre '{}' en el workspace {}", collectionDto.getName(), workspaceId);
+            log.error("Ya existe otra colección con nombre '{}' en el workspace {}", collectionDto.getName(),
+                    workspaceId);
             ErrorUtils.throwDuplicateResource("Colección", "nombre", collectionDto.getName());
         }
 
         // Actualizar la colección
         collection.setName(collectionDto.getName());
         collection.setDescription(collectionDto.getDescription());
-        
+
         // Actualizar tags si existen
         if (collectionDto.getTags() != null) {
             collection.setTags(collectionDto.getTags());
         }
-        
+
         // Actualizar color si existe
         if (collectionDto.getColor() != null) {
             collection.setColor(collectionDto.getColor());
@@ -199,7 +203,7 @@ public class CollectionService {
 
     public void deleteCollection(Long workspaceId, Long collectionId) {
         log.debug("Eliminando colección {} del workspace {}", collectionId, workspaceId);
-        
+
         // Buscar la colección
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> {
@@ -213,10 +217,11 @@ public class CollectionService {
             log.error("La colección {} no pertenece al workspace {}", collectionId, workspaceId);
             ErrorUtils.throwInvalidOperation("La colección no pertenece al workspace especificado");
         }
-        
+
         // Verificar si la colección tiene flashcards asociadas
         if (!collection.getFlashcards().isEmpty()) {
-            log.warn("Eliminando colección {} que contiene {} flashcards", collectionId, collection.getFlashcards().size());
+            log.warn("Eliminando colección {} que contiene {} flashcards", collectionId,
+                    collection.getFlashcards().size());
         }
 
         try {
@@ -249,7 +254,8 @@ public class CollectionService {
         dto.setName(collection.getName());
         dto.setDescription(collection.getDescription());
         dto.setWorkspaceId(collection.getWorkspace().getId());
-        dto.setFlashcards(collection.getFlashcards().stream().map((flashcard) -> flashcardService.convertToDto(flashcard, userId)).toList());
+        dto.setFlashcards(collection.getFlashcards().stream()
+                .map((flashcard) -> flashcardService.convertToDto(flashcard, userId)).toList());
         dto.setItemCount(collection.getFlashcards().size());
         dto.setCreatedBy(collection.getCreatedBy().toDto());
         dto.setCreatedAt(collection.getCreatedAt());
@@ -257,6 +263,5 @@ public class CollectionService {
         dto.setColor(collection.getColor());
         return dto;
     }
-
 
 }
