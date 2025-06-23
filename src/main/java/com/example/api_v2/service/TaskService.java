@@ -22,13 +22,16 @@ public class TaskService {
     private final SubtaskRepository subtaskRepository;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
+    private final WorkspaceActivityService workspaceActivityService;
 
     public TaskService(TaskRepository taskRepository, SubtaskRepository subtaskRepository,
-            WorkspaceRepository workspaceRepository, UserRepository userRepository) {
+            WorkspaceRepository workspaceRepository, UserRepository userRepository, 
+            WorkspaceActivityService workspaceActivityService) {
         this.taskRepository = taskRepository;
         this.subtaskRepository = subtaskRepository;
         this.workspaceRepository = workspaceRepository;
         this.userRepository = userRepository;
+        this.workspaceActivityService = workspaceActivityService;
     }
 
     public List<TaskDto> getTasksByWorkspace(Long workspaceId) {
@@ -92,6 +95,9 @@ public class TaskService {
 
         Task savedTask = taskRepository.save(task);
 
+        // Registrar la actividad
+        workspaceActivityService.logTaskCreated(workspaceId, createdByEmail, createTaskDto.getTitle());
+
         // Crear subtareas si existen
         if (createTaskDto.getSubtasks() != null && !createTaskDto.getSubtasks().isEmpty()) {
             for (CreateSubtaskDto subtaskDto : createTaskDto.getSubtasks()) {
@@ -135,6 +141,21 @@ public class TaskService {
 
         Task updatedTask = taskRepository.save(task);
 
+        // Registrar actividad si la tarea fue completada
+        if (updateTaskDto.getStatus() != null && 
+            TaskStatus.valueOf(updateTaskDto.getStatus()) == TaskStatus.DONE &&
+            task.getStatus() != TaskStatus.DONE) {
+            
+            // Encontrar el email del usuario que está actualizando
+            // Necesitaríamos pasarlo como parámetro, por ahora usar el creador
+            String userEmail = task.getCreatedBy().getEmail();
+            workspaceActivityService.logTaskCompleted(
+                task.getWorkspace().getId(), 
+                userEmail, 
+                task.getTitle()
+            );
+        }
+
         // Actualizar subtareas
         if (updateTaskDto.getSubtasks() != null) {
             // Eliminar subtareas existentes
@@ -154,10 +175,16 @@ public class TaskService {
     }
 
     @Transactional
-    public void deleteTask(Long taskId) {
-        if (!taskRepository.existsById(taskId)) {
-            throw new ResourceNotFoundException("Task not found with id: " + taskId);
-        }
+    public void deleteTask(Long taskId, String userEmail) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+
+        // Registrar la actividad antes de eliminar
+        workspaceActivityService.logTaskDeleted(
+            task.getWorkspace().getId(), 
+            userEmail, 
+            task.getTitle()
+        );
 
         // Las subtareas se eliminarán automáticamente debido a CascadeType.ALL
         taskRepository.deleteById(taskId);

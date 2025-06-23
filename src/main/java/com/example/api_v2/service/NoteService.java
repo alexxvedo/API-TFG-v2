@@ -29,11 +29,13 @@ public class NoteService {
 
     private final NoteRepository noteRepository;
     private final CollectionRepository collectionRepository;
+    private final WorkspaceActivityService workspaceActivityService;
 
     @Autowired
-    public NoteService(NoteRepository noteRepository, CollectionRepository collectionRepository) {
+    public NoteService(NoteRepository noteRepository, CollectionRepository collectionRepository, WorkspaceActivityService workspaceActivityService) {
         this.noteRepository = noteRepository;
         this.collectionRepository = collectionRepository;
+        this.workspaceActivityService = workspaceActivityService;
     }
 
     public List<NoteDto> getNotes(Long collectionId) {
@@ -70,6 +72,14 @@ public class NoteService {
 
         note = noteRepository.save(note);
 
+        // Registrar la actividad
+        workspaceActivityService.logNoteCreated(
+            collection.getWorkspace().getId(), 
+            email, 
+            noteDto.getNoteName(), 
+            collection.getName()
+        );
+
         // No es necesario forzar la inicialización
 
         return convertToDto(note);
@@ -89,10 +99,18 @@ public class NoteService {
 
     }
 
-    public void deleteNote(Long id) {
+    public void deleteNote(Long id, String userEmail) {
 
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
+
+        // Registrar la actividad antes de eliminar
+        workspaceActivityService.logNoteDeleted(
+            note.getCollection().getWorkspace().getId(), 
+            userEmail, 
+            note.getNoteName(), 
+            note.getCollection().getName()
+        );
 
         noteRepository.delete(note);
     }

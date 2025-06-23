@@ -5,7 +5,6 @@ import com.example.api_v2.exception.ErrorUtils;
 import com.example.api_v2.model.Collection;
 import com.example.api_v2.model.Flashcard;
 import com.example.api_v2.model.Workspace;
-import com.example.api_v2.model.WorkspaceActivity;
 import com.example.api_v2.model.User;
 import com.example.api_v2.repository.CollectionRepository;
 import com.example.api_v2.repository.WorkspaceRepository;
@@ -15,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.api_v2.repository.WorkspaceActivityRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +29,7 @@ public class CollectionService {
     private final CollectionRepository collectionRepository;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
-    private final WorkspaceActivityRepository workspaceActivityRepository;
+    private final WorkspaceActivityService workspaceActivityService;
     private final FlashcardService flashcardService;
 
     public List<CollectionDto> getCollectionsByWorkspace(Long workspaceId) {
@@ -128,11 +126,7 @@ public class CollectionService {
             collection = collectionRepository.save(collection);
 
             // Registrar la actividad
-            WorkspaceActivity activity = new WorkspaceActivity();
-            activity.setWorkspace(workspace);
-            activity.setUser(user);
-            activity.setAction("Created collection: " + collectionDto.getName());
-            workspaceActivityRepository.save(activity);
+            workspaceActivityService.logCollectionCreated(workspaceId, email, collectionDto.getName());
 
             log.info("Colección creada correctamente: {} en workspace {}", collection.getId(), workspaceId);
             return convertToDto(collection);
@@ -201,7 +195,7 @@ public class CollectionService {
         }
     }
 
-    public void deleteCollection(Long workspaceId, Long collectionId) {
+    public void deleteCollection(Long workspaceId, Long collectionId, String email) {
         log.debug("Eliminando colección {} del workspace {}", collectionId, workspaceId);
 
         // Buscar la colección
@@ -224,8 +218,14 @@ public class CollectionService {
                     collection.getFlashcards().size());
         }
 
+        String collectionName = collection.getName();
+
         try {
             collectionRepository.delete(collection);
+            
+            // Registrar la actividad
+            workspaceActivityService.logCollectionDeleted(workspaceId, email, collectionName);
+            
             log.info("Colección {} eliminada correctamente", collectionId);
         } catch (Exception e) {
             log.error("Error al eliminar la colección {}: {}", collectionId, e.getMessage(), e);

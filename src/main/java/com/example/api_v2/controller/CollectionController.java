@@ -172,14 +172,16 @@ public class CollectionController {
      * 
      * @param workspaceId ID del workspace
      * @param collectionId ID de la colección a eliminar
+     * @param email Email del usuario que elimina la colección
      * @return Respuesta vacía indicando éxito
      */
-    @DeleteMapping("/{collectionId}")
+    @DeleteMapping("/{collectionId}/user/{email}")
     @WorkspaceEditAccess
     public ResponseEntity<Void> deleteCollection(
             @PathVariable("workspaceId") Long workspaceId,
-            @PathVariable("collectionId") Long collectionId) {
-        log.info("Eliminando colección {} del workspace {}", collectionId, workspaceId);
+            @PathVariable("collectionId") Long collectionId,
+            @PathVariable("email") String email) {
+        log.info("Eliminando colección {} del workspace {} por usuario {}", collectionId, workspaceId, email);
         
         // Validar los parámetros de entrada
         if (workspaceId == null || workspaceId <= 0) {
@@ -191,8 +193,13 @@ public class CollectionController {
             log.error("ID de colección inválido: {}", collectionId);
             ErrorUtils.throwValidationError("El ID de la colección debe ser un número positivo");
         }
+
+        if (email == null || email.trim().isEmpty()) {
+            log.error("Email de usuario inválido: {}", email);
+            ErrorUtils.throwValidationError("El email del usuario es obligatorio");
+        }
         
-        collectionService.deleteCollection(workspaceId, collectionId);
+        collectionService.deleteCollection(workspaceId, collectionId, email);
         return ResponseEntity.noContent().build();
     }
 }

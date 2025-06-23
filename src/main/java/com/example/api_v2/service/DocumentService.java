@@ -25,9 +25,10 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final CollectionRepository collectionRepository;
     private final AgentService agentService; // 🔹 Ahora usamos el servicio del agente
+    private final WorkspaceActivityService workspaceActivityService;
 
     @Transactional
-    public Document uploadFile(Long collectionId, MultipartFile file) throws IOException {
+    public Document uploadFile(Long collectionId, MultipartFile file, String userEmail) throws IOException {
         // Obtener la colección asociada
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> new RuntimeException("Collection not found"));
@@ -41,6 +42,14 @@ public class DocumentService {
         document.setData(file.getBytes());
 
         Document savedDocument = documentRepository.save(document);
+
+        // Registrar la actividad
+        workspaceActivityService.logDocumentUploaded(
+            collection.getWorkspace().getId(), 
+            userEmail, 
+            file.getOriginalFilename(), 
+            collection.getName()
+        );
 
         // 🔹 Enviar documento al agente para indexación y análisis
         agentService.processDocument(file.getBytes())
@@ -87,7 +96,24 @@ public class DocumentService {
     }
 
     @Transactional
-    public void deleteDocument(Long documentId) {
-        documentRepository.deleteById(documentId);
+    public void deleteDocument(Long documentId, String userEmail) {
+        // Obtener el documento antes de eliminarlo para logging
+        Optional<Document> documentOpt = documentRepository.findById(documentId);
+        if (documentOpt.isPresent()) {
+            Document document = documentOpt.get();
+            Collection collection = document.getCollection();
+            
+            documentRepository.deleteById(documentId);
+            
+            // Registrar la actividad
+            workspaceActivityService.logDocumentDeleted(
+                collection.getWorkspace().getId(), 
+                userEmail, 
+                document.getFileName(), 
+                collection.getName()
+            );
+        } else {
+            documentRepository.deleteById(documentId);
+        }
     }
 }

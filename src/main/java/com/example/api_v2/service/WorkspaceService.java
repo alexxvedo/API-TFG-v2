@@ -8,10 +8,8 @@ import com.example.api_v2.model.PermissionType;
 import com.example.api_v2.model.User;
 import com.example.api_v2.model.UserFlashcardProgress;
 import com.example.api_v2.model.Workspace;
-import com.example.api_v2.model.WorkspaceActivity;
 import com.example.api_v2.model.WorkspaceUser;
 import com.example.api_v2.repository.UserRepository;
-import com.example.api_v2.repository.WorkspaceActivityRepository;
 import com.example.api_v2.repository.WorkspaceRepository;
 import com.example.api_v2.repository.WorkspaceUserRepository;
 import com.example.api_v2.repository.UserFlashcardProgressRepository;
@@ -34,7 +32,7 @@ public class WorkspaceService {
     private final WorkspaceUserRepository workspaceUserRepository;
     private final UserRepository userRepository;
     private final UserFlashcardProgressRepository userFlashcardProgressRepository;
-    private final WorkspaceActivityRepository workspaceActivityRepository;
+    private final WorkspaceActivityService workspaceActivityService;
 
     public List<WorkspaceDto> getWorkspacesByUserEmail(String email) {
         if (email == null || email.isEmpty()) {
@@ -100,12 +98,8 @@ public class WorkspaceService {
         // Actualizar el workspace con la nueva relación
         workspace = workspaceRepository.save(workspace);
 
-        WorkspaceActivity activity = new WorkspaceActivity();
-        activity.setWorkspace(workspace);
-        activity.setUser(user);
-        activity.setAction("Created workspace: " + workspace.getName());
-        activity = workspaceActivityRepository.save(activity);
-        log.info("Created workspace activity with id: {}", activity.getId());
+        // Registrar la actividad
+        workspaceActivityService.logActivity(workspace.getId(), email, "Creó el workspace '" + workspace.getName() + "'");
 
 
         return convertToDto(workspace);
@@ -144,6 +138,9 @@ public class WorkspaceService {
 
         workspace.getWorkspaceUsers().add(workspaceUser);
         workspace = workspaceRepository.save(workspace);
+
+        // Registrar la actividad
+        workspaceActivityService.logUserJoined(id, email, user.getName());
 
         // Crear UserFlashcardProgress para el todas las flashcards de todas las colecciones
         List<Collection> collections = workspace.getCollections().stream().collect(Collectors.toList());

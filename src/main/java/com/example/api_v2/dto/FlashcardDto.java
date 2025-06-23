@@ -18,6 +18,7 @@ public class FlashcardDto {
     private Long id;
     private String question;
     private String answer;
+    private String difficulty;
     private Long collectionId;
     private KnowledgeLevel knowledgeLevel;
     private LocalDateTime nextReviewDate;

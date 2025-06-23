@@ -29,6 +29,7 @@ public class StudySessionService {
     private final UserRepository userRepository;
     private final UserStatsRepository userStatsRepository;
     private final FlashcardService flashcardService;
+    private final WorkspaceActivityService workspaceActivityService;
 
     public StudySessionDto createStudySession(StudySessionDto studySessionDto) {
         Collection collection = collectionRepository.findById(studySessionDto.getCollectionId())
@@ -75,6 +76,14 @@ public class StudySessionService {
                 .orElseThrow(() -> new EntityNotFoundException("User stats not found"));
         userStats.setStudySessionsCompleted(1);
         userStatsRepository.save(userStats);
+
+        // Registrar la actividad
+        workspaceActivityService.logStudySessionCompleted(
+            studySession.getCollection().getWorkspace().getId(),
+            studySession.getUser().getEmail(),
+            studySession.getTotalCards(),
+            studySession.getCollection().getName()
+        );
 
         studySession = studySessionRepository.save(studySession);
         return convertToDto(studySession);

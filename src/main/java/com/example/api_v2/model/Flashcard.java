@@ -32,6 +32,9 @@ public class Flashcard {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
 
+    @Column(name = "difficulty")
+    private String difficulty;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "collection_id", nullable = false)
     @JsonBackReference(value = "collection-flashcards")
@@ -75,6 +78,7 @@ public class Flashcard {
         dto.setId(id);
         dto.setQuestion(question);
         dto.setAnswer(answer);
+        dto.setDifficulty(difficulty);
         dto.setCollectionId(collection.getId());
         dto.setCreatedBy(createdBy.toDto()); // Convertimos a DTO
         dto.setCreatedAt(createdAt);

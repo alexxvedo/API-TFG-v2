@@ -28,6 +28,7 @@ public class FlashcardService {
     private final UserRepository userRepository;
     private final UserFlashcardProgressRepository userFlashcardProgressRepository;
     private final UserStatsService userStatsService;
+    private final WorkspaceActivityService workspaceActivityService;
 
     /**
      * Obtiene las flashcards de una colección con el progreso individual del
@@ -470,6 +471,7 @@ public class FlashcardService {
         Flashcard flashcard = Flashcard.builder()
                 .question(flashcardDto.getQuestion())
                 .answer(flashcardDto.getAnswer())
+                .difficulty(flashcardDto.getDifficulty())
                 .collection(collection)
                 .createdBy(user)
                 .createdAt(LocalDateTime.now())
@@ -483,6 +485,15 @@ public class FlashcardService {
         updatedStats.setCreatedFlashcards(1);
         updatedStats.setExperience(5);
         userStatsService.updateUserStats(user.getId().toString(), updatedStats);
+
+        // Registrar la actividad (solo para creación manual, no automática)
+        if (flashcardDto.getQuestion() != null && flashcardDto.getAnswer() != null) {
+            workspaceActivityService.logActivity(
+                collection.getWorkspace().getId(), 
+                email, 
+                "Creó una flashcard en '" + collection.getName() + "'"
+            );
+        }
 
         // Crear un UserFlashcardProgress para todos los usuarios del workspace
         List<UserFlashcardProgress> userFlashcardProgressList = collection.getWorkspace().getWorkspaceUsers().stream()
@@ -733,6 +744,9 @@ public class FlashcardService {
         if (flashcardDto.getAnswer() != null) {
             flashcard.setAnswer(flashcardDto.getAnswer());
         }
+        if (flashcardDto.getDifficulty() != null) {
+            flashcard.setDifficulty(flashcardDto.getDifficulty());
+        }
         UserFlashcardProgress userFlashcardProgress = userFlashcardProgressRepository
                 .findByFlashcardIdAndUserId(flashcard.getId(), flashcardDto.getCreatedBy().getId())
                 .orElse(null);
@@ -750,6 +764,7 @@ public class FlashcardService {
         dto.setId(flashcard.getId());
         dto.setQuestion(flashcard.getQuestion());
         dto.setAnswer(flashcard.getAnswer());
+        dto.setDifficulty(flashcard.getDifficulty());
         dto.setCollectionId(flashcard.getCollection().getId());
         dto.setKnowledgeLevel(userFlashcardProgress.getKnowledgeLevel());
         dto.setNextReviewDate(userFlashcardProgress.getNextReviewDate());
@@ -778,6 +793,7 @@ public class FlashcardService {
         dto.setId(flashcard.getId());
         dto.setQuestion(flashcard.getQuestion());
         dto.setAnswer(flashcard.getAnswer());
+        dto.setDifficulty(flashcard.getDifficulty());
         dto.setCollectionId(flashcard.getCollection().getId());
         dto.setKnowledgeLevel(userFlashcardProgress.get().getKnowledgeLevel());
         dto.setNextReviewDate(userFlashcardProgress.get().getNextReviewDate());
