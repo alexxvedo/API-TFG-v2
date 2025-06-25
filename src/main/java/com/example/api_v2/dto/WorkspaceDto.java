@@ -10,6 +10,7 @@ public class WorkspaceDto {
     private String description;
     private String createdAt;
     private String updatedAt;
+    private String user;
     private List<WorkspaceUserDto> users;
     private List<CollectionDto> collections;
 }

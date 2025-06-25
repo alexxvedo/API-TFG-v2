@@ -175,16 +175,16 @@ public class TaskService {
     }
 
     @Transactional
-    public void deleteTask(Long taskId, String userEmail) {
+    public void deleteTask(Long taskId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
         // Registrar la actividad antes de eliminar
-        workspaceActivityService.logTaskDeleted(
-            task.getWorkspace().getId(), 
-            userEmail, 
-            task.getTitle()
-        );
+        // workspaceActivityService.logTaskDeleted(
+        //     task.getWorkspace().getId(), 
+        //     userEmail, 
+        //     task.getTitle()
+        // );
 
         // Las subtareas se eliminarán automáticamente debido a CascadeType.ALL
         taskRepository.deleteById(taskId);

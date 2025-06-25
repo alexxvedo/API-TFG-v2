@@ -270,7 +270,7 @@ class CollectionServiceTest {
         when(collectionRepository.findById(anyLong())).thenReturn(Optional.of(testCollection));
 
         // When
-        collectionService.deleteCollection(1L, 1L);
+        collectionService.deleteCollection(1L, 1L, "test@example.com");
 
         // Then
         verify(collectionRepository).findById(1L);
@@ -284,7 +284,7 @@ class CollectionServiceTest {
 
         // When & Then
         assertThrows(RuntimeException.class, () -> 
-            collectionService.deleteCollection(1L, 1L)
+            collectionService.deleteCollection(1L, 1L, "test@example.com")
         );
         verify(collectionRepository).findById(1L);
         verify(collectionRepository, never()).delete(any(Collection.class));

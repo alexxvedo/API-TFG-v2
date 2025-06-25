@@ -99,18 +99,18 @@ public class NoteService {
 
     }
 
-    public void deleteNote(Long id, String userEmail) {
+    public void deleteNote(Long id) {
 
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
 
         // Registrar la actividad antes de eliminar
-        workspaceActivityService.logNoteDeleted(
-            note.getCollection().getWorkspace().getId(), 
-            userEmail, 
-            note.getNoteName(), 
-            note.getCollection().getName()
-        );
+        // workspaceActivityService.logNoteDeleted(
+        //     note.getCollection().getWorkspace().getId(), 
+        //     userEmail, 
+        //     note.getNoteName(), 
+        //     note.getCollection().getName()
+        // );
 
         noteRepository.delete(note);
     }

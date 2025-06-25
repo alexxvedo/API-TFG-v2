@@ -28,7 +28,7 @@ public class DocumentService {
     private final WorkspaceActivityService workspaceActivityService;
 
     @Transactional
-    public Document uploadFile(Long collectionId, MultipartFile file, String userEmail) throws IOException {
+    public Document uploadFile(Long collectionId, MultipartFile file) throws IOException {
         // Obtener la colección asociada
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> new RuntimeException("Collection not found"));
@@ -44,12 +44,12 @@ public class DocumentService {
         Document savedDocument = documentRepository.save(document);
 
         // Registrar la actividad
-        workspaceActivityService.logDocumentUploaded(
-            collection.getWorkspace().getId(), 
-            userEmail, 
-            file.getOriginalFilename(), 
-            collection.getName()
-        );
+        // workspaceActivityService.logDocumentUploaded(
+        //     collection.getWorkspace().getId(), 
+        //     userEmail, 
+        //     file.getOriginalFilename(), 
+        //     collection.getName()
+        // );
 
         // 🔹 Enviar documento al agente para indexación y análisis
         agentService.processDocument(file.getBytes())
@@ -96,7 +96,7 @@ public class DocumentService {
     }
 
     @Transactional
-    public void deleteDocument(Long documentId, String userEmail) {
+    public void deleteDocument(Long documentId) {
         // Obtener el documento antes de eliminarlo para logging
         Optional<Document> documentOpt = documentRepository.findById(documentId);
         if (documentOpt.isPresent()) {
@@ -106,12 +106,12 @@ public class DocumentService {
             documentRepository.deleteById(documentId);
             
             // Registrar la actividad
-            workspaceActivityService.logDocumentDeleted(
-                collection.getWorkspace().getId(), 
-                userEmail, 
-                document.getFileName(), 
-                collection.getName()
-            );
+        //     workspaceActivityService.logDocumentDeleted(
+        //         collection.getWorkspace().getId(), 
+        //         userEmail, 
+        //         document.getFileName(), 
+        //         collection.getName()
+        //     );
         } else {
             documentRepository.deleteById(documentId);
         }

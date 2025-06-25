@@ -1,5 +1,6 @@
-package com.example.api_v2.config;
+    package com.example.api_v2.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.hibernate5.jakarta.Hibernate5JakartaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -12,6 +13,9 @@ public class JacksonConfig {
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
+        
+        // Configurar para ignorar campos desconocidos por defecto
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         
         // Registrar el módulo Hibernate5Module para manejar los proxies de Hibernate
         Hibernate5JakartaModule hibernateModule = new Hibernate5JakartaModule();
